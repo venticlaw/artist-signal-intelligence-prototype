@@ -1,0 +1,235 @@
+{
+  "updated": "2026-08-07",
+  "status": "fictional-fixtures-only",
+  "buyerModes": [
+    {
+      "id": "distributor",
+      "label": "Distributor / Indie Recoupment",
+      "description": "Weights low-cost stream impact, release consistency, fan density, and campaign affordability.",
+      "weights": {
+        "momentum": 1.1,
+        "engagement": 1,
+        "community": 1.1,
+        "catalog": 1.25,
+        "relationships": 0.8,
+        "live": 0.75,
+        "press": 0.7,
+        "reliability": 1.3
+      }
+    },
+    {
+      "id": "management",
+      "label": "Management Growth",
+      "description": "Weights consistency, team gaps, audience quality, live upside, and development potential.",
+      "weights": {
+        "momentum": 0.9,
+        "engagement": 1.1,
+        "community": 1.15,
+        "catalog": 1.1,
+        "relationships": 1,
+        "live": 1.1,
+        "press": 0.7,
+        "reliability": 1
+      }
+    },
+    {
+      "id": "major",
+      "label": "Major Label Awareness",
+      "description": "Weights broader cultural movement, press, platform velocity, brand safety, and breakout potential.",
+      "weights": {
+        "momentum": 1.25,
+        "engagement": 0.9,
+        "community": 1,
+        "catalog": 0.75,
+        "relationships": 0.9,
+        "live": 0.8,
+        "press": 1.35,
+        "reliability": 1
+      }
+    },
+    {
+      "id": "creator",
+      "label": "Creator / AI-Music Partnership",
+      "description": "Weights creator-native audience, visual identity, collaboration openness, trend fit, and repeatable content.",
+      "weights": {
+        "momentum": 1.15,
+        "engagement": 1.2,
+        "community": 1.1,
+        "catalog": 0.75,
+        "relationships": 1,
+        "live": 0.55,
+        "press": 0.85,
+        "reliability": 1
+      }
+    }
+  ],
+  "artists": [
+    {
+      "id": "signal-test-01",
+      "name": "Signal Test Artist 01",
+      "stage": "Early catalog, active short-form audience",
+      "scene": "Fictional alt-R&B micro-scene in a mid-size college city",
+      "summary": "Fictional artist used to test distributor-fit scoring with steady releases, dense repeat engagement, and clear community pull.",
+      "scores": {
+        "momentum": 15,
+        "engagement": 13,
+        "community": 14,
+        "catalog": 9,
+        "relationships": 6,
+        "live": 5,
+        "press": 4,
+        "reliability": 8
+      },
+      "confidence": "Medium",
+      "recommendation": "Watch for 30 days and validate whether repeat fan comments convert into measurable release saves.",
+      "strategy": "Run a low-cost release retargeting test around the strongest public content theme before any larger spend.",
+      "disconfirmingEvidence": "Engagement remains social-only with no public release activity, fan repetition weakens, or new posts show inflated ratios.",
+      "risks": [
+        "Limited third-party press",
+        "Live-market proof is still thin",
+        "Relationship graph is mostly peer-level"
+      ],
+      "signals": [
+        {
+          "category": "Public social velocity",
+          "label": "Observed",
+          "freshness": "Recent fixture",
+          "confidence": "Medium",
+          "detail": "Three fictional short-form posts show rising comment depth across a two-week fixture window."
+        },
+        {
+          "category": "Engagement quality",
+          "label": "Observed",
+          "freshness": "Recent fixture",
+          "confidence": "High",
+          "detail": "Repeat fictional fan handles ask about release timing and mention a shared local scene."
+        },
+        {
+          "category": "Catalog consistency",
+          "label": "Observed",
+          "freshness": "Current fixture",
+          "confidence": "Medium",
+          "detail": "Monthly release cadence appears consistent in the placeholder data."
+        }
+      ]
+    },
+    {
+      "id": "signal-test-02",
+      "name": "Signal Test Artist 02",
+      "stage": "High visual momentum, catalog still shallow",
+      "scene": "Fictional creator-led rap/pop crossover circle",
+      "summary": "Fictional artist used to test major-label and creator-partnership modes with strong awareness indicators but weaker recoupment confidence.",
+      "scores": {
+        "momentum": 18,
+        "engagement": 11,
+        "community": 12,
+        "catalog": 4,
+        "relationships": 8,
+        "live": 3,
+        "press": 8,
+        "reliability": 6
+      },
+      "confidence": "Low",
+      "recommendation": "Needs more research before any buyer packet; pressure-test whether visible awareness maps to listener behavior.",
+      "strategy": "If validated, package as a creator-partnership test rather than a distributor-recoupment play.",
+      "disconfirmingEvidence": "Content views remain disconnected from catalog behavior or evidence depends on artist-reported metrics only.",
+      "risks": [
+        "Shallow catalog",
+        "Unknown conversion from content to streams",
+        "Possible awareness/revenue mismatch"
+      ],
+      "signals": [
+        {
+          "category": "Public social velocity",
+          "label": "Reported by artist/team",
+          "freshness": "Recent fixture",
+          "confidence": "Low",
+          "detail": "Fixture includes a high-growth claim that needs third-party validation before scoring confidence can rise."
+        },
+        {
+          "category": "Press/cultural context",
+          "label": "Third-party public source",
+          "freshness": "Recent fixture",
+          "confidence": "Medium",
+          "detail": "Fictional niche newsletter mention suggests creator-world awareness."
+        },
+        {
+          "category": "Data reliability",
+          "label": "Estimated",
+          "freshness": "Current fixture",
+          "confidence": "Low",
+          "detail": "One fixture value triggers a suspicious-ratio warning and lowers confidence."
+        }
+      ]
+    },
+    {
+      "id": "signal-test-03",
+      "name": "Signal Test Artist 03",
+      "stage": "Live scene traction, slower online growth",
+      "scene": "Fictional regional indie-rock and college-radio network",
+      "summary": "Fictional artist used to test management-growth mode with credible community and live-market proof but slower platform velocity.",
+      "scores": {
+        "momentum": 9,
+        "engagement": 10,
+        "community": 15,
+        "catalog": 8,
+        "relationships": 9,
+        "live": 9,
+        "press": 6,
+        "reliability": 9
+      },
+      "confidence": "High",
+      "recommendation": "Shortlist for management-growth review; map the live-market proof to next-market expansion.",
+      "strategy": "Use local audience density and support-slot history to plan a regional rollout with conservative spend.",
+      "disconfirmingEvidence": "Live turnout evidence is not repeatable outside the home market or catalog cadence slows.",
+      "risks": [
+        "Online growth is slower than the category average",
+        "May require development time before distributor monetization",
+        "Press is regional rather than national"
+      ],
+      "signals": [
+        {
+          "category": "Live-market indicators",
+          "label": "Third-party public source",
+          "freshness": "Recent fixture",
+          "confidence": "High",
+          "detail": "Fictional event listings show support slots growing from small rooms to mid-size local venues."
+        },
+        {
+          "category": "Community fit",
+          "label": "Observed",
+          "freshness": "Current fixture",
+          "confidence": "High",
+          "detail": "Repeated references to the same fictional local scene indicate concentrated fanbase density."
+        },
+        {
+          "category": "Relationship graph context",
+          "label": "Observed",
+          "freshness": "Current fixture",
+          "confidence": "Medium",
+          "detail": "Collaborators recur across placeholder credits, local bills, and public posts."
+        }
+      ]
+    }
+  ],
+  "approvalGates": [
+    "No real artist rankings or public claims",
+    "No outreach to artists, labels, distributors, managers, playlist teams, or brand partners",
+    "No scraping private, gated, paid, login-only, or ToS-sensitive sources",
+    "No paid APIs, datasets, ads, subscriptions, credits, or exports",
+    "No public lead capture, backend storage, database sync, or live automation",
+    "No payment, checkout, DNS, legal filings, Drive movement, outbound sends, or deletion"
+  ],
+  "passReasons": [
+    "Genre mismatch",
+    "Weak engagement quality",
+    "Unreliable or incomplete data",
+    "Too early",
+    "Too late",
+    "Poor buyer fit",
+    "Brand or context risk",
+    "Unclear team or relationship graph",
+    "Duplicate or not novel",
+    "Bad market timing"
+  ]
+}

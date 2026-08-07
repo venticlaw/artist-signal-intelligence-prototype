@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Artist Signal Intelligence static prototype for public-safe A&R signal review."
+    />
+    <title>Artist Signal Intelligence Prototype</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">ASI prototype / fictional data</p>
+        <h1>Artist Signal Intelligence</h1>
+      </div>
+      <div class="status-stack" aria-label="Prototype status">
+        <span class="status-pill">Static GitHub Pages build</span>
+        <span class="status-pill gate">Approval-gated data</span>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="control-band" aria-label="Buyer mode and safety summary">
+        <div class="mode-control">
+          <label for="buyerMode">Buyer lens</label>
+          <select id="buyerMode"></select>
+        </div>
+        <div class="mode-summary" id="modeSummary"></div>
+        <div class="safety-callout">
+          <strong>Public-safe mode:</strong>
+          fictional artists, local fixtures, no live collection, no outreach, no backend.
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Prototype views">
+        <button class="tab is-active" type="button" data-tab="watchlist">Watchlist</button>
+        <button class="tab" type="button" data-tab="brief">Artist Brief</button>
+        <button class="tab" type="button" data-tab="evidence">Signal Evidence</button>
+        <button class="tab" type="button" data-tab="scoring">Scoring</button>
+        <button class="tab" type="button" data-tab="notes">A&R Notes</button>
+        <button class="tab" type="button" data-tab="strategy">Strategy</button>
+        <button class="tab" type="button" data-tab="report">Report Preview</button>
+        <button class="tab" type="button" data-tab="gates">Approval Gates</button>
+      </nav>
+
+      <section class="tab-panel is-active" id="watchlist" aria-labelledby="watchlist-title">
+        <div class="section-heading">
+          <p class="eyebrow">Private watchlist simulation</p>
+          <h2 id="watchlist-title">Fictional artist queue</h2>
+        </div>
+        <div class="watchlist-grid" id="watchlistGrid"></div>
+      </section>
+
+      <section class="tab-panel" id="brief" aria-labelledby="brief-title">
+        <div class="section-heading">
+          <p class="eyebrow">Granular artist intelligence</p>
+          <h2 id="brief-title">Artist brief</h2>
+        </div>
+        <div class="detail-grid">
+          <article class="detail-panel" id="artistBrief"></article>
+          <aside class="detail-panel muted-panel" id="riskPanel"></aside>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="evidence" aria-labelledby="evidence-title">
+        <div class="section-heading">
+          <p class="eyebrow">Source-separated evidence</p>
+          <h2 id="evidence-title">Signal evidence</h2>
+        </div>
+        <div class="evidence-list" id="evidenceList"></div>
+      </section>
+
+      <section class="tab-panel" id="scoring" aria-labelledby="scoring-title">
+        <div class="section-heading">
+          <p class="eyebrow">Reliability-first scoring</p>
+          <h2 id="scoring-title">Scoring model v0</h2>
+        </div>
+        <div class="score-layout">
+          <div class="score-bars" id="scoreBars"></div>
+          <div class="detail-panel">
+            <h3>Guardrails</h3>
+            <ul class="check-list">
+              <li>Source categories stay separate.</li>
+              <li>Unknowns remain visible.</li>
+              <li>Suspicious or impossible values lower confidence.</li>
+              <li>Human review is required before score-rule changes.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="notes" aria-labelledby="notes-title">
+        <div class="section-heading">
+          <p class="eyebrow">Human feedback loop</p>
+          <h2 id="notes-title">A&R notes</h2>
+        </div>
+        <div class="notes-grid">
+          <form class="notes-form" id="notesForm">
+            <label>
+              Decision
+              <select id="decisionInput">
+                <option>Watch</option>
+                <option>Shortlist</option>
+                <option>Pass</option>
+                <option>Contact later</option>
+                <option>Needs more research</option>
+              </select>
+            </label>
+            <label>
+              Pass or caution reason
+              <select id="reasonInput"></select>
+            </label>
+            <label>
+              Human learning note
+              <textarea id="noteInput" rows="5" maxlength="420"></textarea>
+            </label>
+            <button type="submit">Save local note</button>
+          </form>
+          <div class="detail-panel" id="savedNote"></div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="strategy" aria-labelledby="strategy-title">
+        <div class="section-heading">
+          <p class="eyebrow">Boardroom-usable action</p>
+          <h2 id="strategy-title">Strategy recommendation</h2>
+        </div>
+        <article class="detail-panel" id="strategyPanel"></article>
+      </section>
+
+      <section class="tab-panel" id="report" aria-labelledby="report-title">
+        <div class="section-heading">
+          <p class="eyebrow">Placeholder packet</p>
+          <h2 id="report-title">Scouting report preview</h2>
+        </div>
+        <pre class="report-box" id="reportPreview"></pre>
+      </section>
+
+      <section class="tab-panel" id="gates" aria-labelledby="gates-title">
+        <div class="section-heading">
+          <p class="eyebrow">Approval infrastructure</p>
+          <h2 id="gates-title">Blocked actions</h2>
+        </div>
+        <div class="gate-grid" id="gateGrid"></div>
+      </section>
+    </main>
+
+    <footer>
+      <span>ASI working title. Official brand pending.</span>
+      <span>Fictional fixtures only.</span>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
