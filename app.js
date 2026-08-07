@@ -114,6 +114,10 @@ function confidenceClass(confidence) {
   return confidence === "High" ? "confidence high" : "confidence";
 }
 
+function recordLabel() {
+  return state.data?.status === "private-browser-import" ? "Private browser import" : "Fictional fixture";
+}
+
 function renderModeControl() {
   const select = $("#buyerMode");
   select.innerHTML = state.data.buyerModes
@@ -145,10 +149,10 @@ function renderWatchlist() {
       const fit = weightedScore(artist, mode);
       const base = baseScore(artist);
       return `
-        <article class="artist-card ${artist.id === state.activeArtistId ? "is-active" : ""}" data-artist-id="${artist.id}" tabindex="0">
+        <article class="artist-card ${artist.id === state.activeArtistId ? "is-active" : ""}" data-artist-id="${escapeHtml(artist.id)}" tabindex="0">
           <div class="card-topline">
             <div>
-              <p class="eyebrow">Fictional fixture</p>
+              <p class="eyebrow">${escapeHtml(recordLabel())}</p>
               <h3>${escapeHtml(artist.name)}</h3>
             </div>
             <div class="score-badge">${fit}</div>
@@ -309,7 +313,7 @@ function renderReport() {
   const mode = getMode();
   const report = [
     `ASI SCOUTING REPORT PREVIEW`,
-    `Status: Fictional fixture for public-safe prototype`,
+    `Status: ${state.data.status === "private-browser-import" ? "Private browser import. Do not publish without separate approval." : "Fictional fixture for public-safe prototype"}`,
     ``,
     `Artist: ${artist.name}`,
     `Buyer lens: ${mode.label}`,
