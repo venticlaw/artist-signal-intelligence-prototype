@@ -1,7 +1,9 @@
 const state = {
   data: null,
+  defaultData: null,
   activeArtistId: null,
-  buyerModeId: "distributor"
+  buyerModeId: "distributor",
+  dataSourceLabel: "Fictional fixtures"
 };
 
 const dimensionLabels = {
@@ -27,6 +29,62 @@ const maxPoints = {
 };
 
 const $ = (selector) => document.querySelector(selector);
+
+const importTemplate = {
+  status: "private-browser-import",
+  artists: [
+    {
+      id: "private-review-artist-001",
+      name: "PRIVATE REVIEW ARTIST NAME",
+      stage: "Manual private review",
+      scene: "Publicly observed scene/community context",
+      summary: "Boardroom-safe summary based on manually reviewed public evidence.",
+      scores: {
+        momentum: 0,
+        engagement: 0,
+        community: 0,
+        catalog: 0,
+        relationships: 0,
+        live: 0,
+        press: 0,
+        reliability: 0
+      },
+      confidence: "Insufficient",
+      recommendation: "Needs more research",
+      strategy: "State the lowest-risk next validation step.",
+      disconfirmingEvidence: "State what would prove this recommendation wrong.",
+      risks: ["Unknowns remain unresolved"],
+      signals: [
+        {
+          category: "Public social velocity",
+          label: "Observed",
+          freshness: "YYYY-MM-DD observed date",
+          confidence: "Low",
+          detail: "Analyst note. Include source URL in the note if approved for private review."
+        }
+      ]
+    }
+  ]
+};
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function clampScore(value, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(max, Math.round(number)));
+}
+
+function validConfidence(value) {
+  return ["High", "Medium", "Low", "Insufficient"].includes(value) ? value : "Insufficient";
+}
 
 function getMode() {
   return state.data.buyerModes.find((mode) => mode.id === state.buyerModeId);
@@ -66,7 +124,7 @@ function renderModeControl() {
     state.buyerModeId = event.target.value;
     renderAll();
   });
-  $("#modeSummary").textContent = getMode().description;
+  $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
 }
 
 function renderTabs() {
@@ -91,11 +149,11 @@ function renderWatchlist() {
           <div class="card-topline">
             <div>
               <p class="eyebrow">Fictional fixture</p>
-              <h3>${artist.name}</h3>
+              <h3>${escapeHtml(artist.name)}</h3>
             </div>
             <div class="score-badge">${fit}</div>
           </div>
-          <p class="summary">${artist.summary}</p>
+          <p class="summary">${escapeHtml(artist.summary)}</p>
           <div class="signal-strip">
             <div class="score-row">
               <span class="mini-label">Base score</span>
@@ -107,12 +165,12 @@ function renderWatchlist() {
             </div>
             <div class="score-row">
               <span class="mini-label">Confidence</span>
-              <strong class="${confidenceClass(artist.confidence)}">${artist.confidence}</strong>
+              <strong class="${confidenceClass(artist.confidence)}">${escapeHtml(artist.confidence)}</strong>
             </div>
           </div>
           <div>
             <span class="mini-label">Recommended next action</span>
-            <p>${artist.recommendation}</p>
+            <p>${escapeHtml(artist.recommendation)}</p>
           </div>
         </article>
       `;
@@ -138,21 +196,21 @@ function renderBrief() {
   const artist = getArtist();
   const mode = getMode();
   $("#artistBrief").innerHTML = `
-    <p class="eyebrow">${artist.stage}</p>
-    <h3>${artist.name}</h3>
-    <p>${artist.summary}</p>
+    <p class="eyebrow">${escapeHtml(artist.stage)}</p>
+    <h3>${escapeHtml(artist.name)}</h3>
+    <p>${escapeHtml(artist.summary)}</p>
     <div class="stat-grid">
       <div class="stat"><span class="mini-label">Buyer fit</span><strong>${weightedScore(artist, mode)}</strong></div>
       <div class="stat"><span class="mini-label">Base score</span><strong>${baseScore(artist)}</strong></div>
-      <div class="stat"><span class="mini-label">Confidence</span><strong>${artist.confidence}</strong></div>
-      <div class="stat"><span class="mini-label">Mode</span><strong>${mode.label.split(" ")[0]}</strong></div>
+      <div class="stat"><span class="mini-label">Confidence</span><strong>${escapeHtml(artist.confidence)}</strong></div>
+      <div class="stat"><span class="mini-label">Mode</span><strong>${escapeHtml(mode.label.split(" ")[0])}</strong></div>
     </div>
     <h3>Scene and network context</h3>
-    <p>${artist.scene}</p>
+    <p>${escapeHtml(artist.scene)}</p>
   `;
   $("#riskPanel").innerHTML = `
     <h3>Risks and unknowns</h3>
-    <ul class="check-list">${artist.risks.map((risk) => `<li>${risk}</li>`).join("")}</ul>
+    <ul class="check-list">${artist.risks.map((risk) => `<li>${escapeHtml(risk)}</li>`).join("")}</ul>
   `;
 }
 
@@ -163,13 +221,13 @@ function renderEvidence() {
       (signal) => `
         <article class="evidence-item">
           <div>
-            <p class="eyebrow">${signal.category}</p>
-            <strong>${signal.label}</strong>
+            <p class="eyebrow">${escapeHtml(signal.category)}</p>
+            <strong>${escapeHtml(signal.label)}</strong>
           </div>
-          <p>${signal.detail}</p>
+          <p>${escapeHtml(signal.detail)}</p>
           <div class="tag-row">
-            <span class="tag">${signal.confidence}</span>
-            <span class="tag">${signal.freshness}</span>
+            <span class="tag">${escapeHtml(signal.confidence)}</span>
+            <span class="tag">${escapeHtml(signal.freshness)}</span>
             ${signal.confidence === "Low" ? '<span class="tag warning">Review required</span>' : ""}
           </div>
         </article>
@@ -208,14 +266,14 @@ function renderNotes() {
   $("#savedNote").innerHTML = saved
     ? `
       <p class="eyebrow">Browser-local note</p>
-      <h3>${saved.decision}</h3>
-      <p><strong>Reason:</strong> ${saved.reason}</p>
-      <p>${saved.note || "No note text saved."}</p>
+      <h3>${escapeHtml(saved.decision)}</h3>
+      <p><strong>Reason:</strong> ${escapeHtml(saved.reason)}</p>
+      <p>${escapeHtml(saved.note || "No note text saved.")}</p>
       <p class="summary">This is not backend storage and will not sync across users or devices.</p>
     `
     : `
       <p class="eyebrow">No saved local note</p>
-      <h3>${artist.name}</h3>
+      <h3>${escapeHtml(artist.name)}</h3>
       <p class="summary">Add a decision and learning note to simulate the A&R feedback loop.</p>
     `;
 }
@@ -239,10 +297,10 @@ function bindNotesForm() {
 function renderStrategy() {
   const artist = getArtist();
   $("#strategyPanel").innerHTML = `
-    <h3>${artist.recommendation}</h3>
-    <p>${artist.strategy}</p>
+    <h3>${escapeHtml(artist.recommendation)}</h3>
+    <p>${escapeHtml(artist.strategy)}</p>
     <h3>Disconfirming evidence to watch</h3>
-    <p>${artist.disconfirmingEvidence}</p>
+    <p>${escapeHtml(artist.disconfirmingEvidence)}</p>
   `;
 }
 
@@ -288,16 +346,127 @@ function renderGates() {
       (gate) => `
         <article class="gate-card">
           <strong>Blocked</strong>
-          <span>${gate}</span>
+          <span>${escapeHtml(gate)}</span>
         </article>
       `
     )
     .join("");
 }
 
+function normalizeArtist(rawArtist, index) {
+  if (!rawArtist || typeof rawArtist !== "object") {
+    throw new Error(`Artist ${index + 1} is not an object.`);
+  }
+
+  const name = String(rawArtist.name || "").trim();
+  if (!name) throw new Error(`Artist ${index + 1} is missing a name.`);
+
+  const scores = {};
+  Object.entries(maxPoints).forEach(([key, max]) => {
+    scores[key] = clampScore(rawArtist.scores?.[key], max);
+  });
+
+  const signals = Array.isArray(rawArtist.signals)
+    ? rawArtist.signals.map((signal) => ({
+        category: String(signal.category || "Uncategorized signal"),
+        label: String(signal.label || "Unknown"),
+        freshness: String(signal.freshness || "Unknown"),
+        confidence: validConfidence(signal.confidence),
+        detail: String(signal.detail || "No detail provided.")
+      }))
+    : [];
+
+  if (!signals.length) {
+    throw new Error(`${name} needs at least one source-separated signal.`);
+  }
+
+  return {
+    id: String(rawArtist.id || `private-review-${index + 1}`),
+    name,
+    stage: String(rawArtist.stage || "Manual private review"),
+    scene: String(rawArtist.scene || "Unknown scene/community context"),
+    summary: String(rawArtist.summary || "No summary provided."),
+    scores,
+    confidence: validConfidence(rawArtist.confidence),
+    recommendation: String(rawArtist.recommendation || "Needs more research"),
+    strategy: String(rawArtist.strategy || "No strategy recommendation provided."),
+    disconfirmingEvidence: String(rawArtist.disconfirmingEvidence || "No disconfirming evidence provided."),
+    risks: Array.isArray(rawArtist.risks) && rawArtist.risks.length
+      ? rawArtist.risks.map((risk) => String(risk))
+      : ["Unknowns remain unresolved"],
+    signals
+  };
+}
+
+function normalizeImport(rawPacket) {
+  const artistsInput = Array.isArray(rawPacket?.artists)
+    ? rawPacket.artists
+    : rawPacket?.artist
+      ? [rawPacket.artist]
+      : Array.isArray(rawPacket)
+        ? rawPacket
+        : [];
+
+  if (!artistsInput.length) {
+    throw new Error("Import must contain an artists array, an artist object, or an array of artists.");
+  }
+
+  return {
+    ...state.defaultData,
+    status: "private-browser-import",
+    artists: artistsInput.map(normalizeArtist)
+  };
+}
+
+function loadImportedPacket(packet, label) {
+  const normalized = normalizeImport(packet);
+  state.data = normalized;
+  state.activeArtistId = normalized.artists[0].id;
+  state.dataSourceLabel = label;
+  $("#importStatus").textContent = `Loaded ${normalized.artists.length} private artist record(s) into this browser session only.`;
+  renderAll();
+}
+
+function bindImportForm() {
+  $("#schemaPreview").textContent = JSON.stringify(importTemplate, null, 2);
+
+  $("#sampleImportButton").addEventListener("click", () => {
+    $("#importInput").value = JSON.stringify(importTemplate, null, 2);
+    $("#importStatus").textContent = "Template inserted. Replace placeholder values before private review.";
+  });
+
+  $("#resetFixturesButton").addEventListener("click", () => {
+    state.data = structuredClone(state.defaultData);
+    state.activeArtistId = state.data.artists[0].id;
+    state.dataSourceLabel = "Fictional fixtures";
+    $("#importInput").value = "";
+    $("#importFile").value = "";
+    $("#importStatus").textContent = "Reset to fictional fixtures.";
+    renderAll();
+  });
+
+  $("#importFile").addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    $("#importInput").value = await file.text();
+    $("#importStatus").textContent = `Loaded ${file.name} into the text box. Review, then load into dashboard.`;
+  });
+
+  $("#importForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const text = $("#importInput").value.trim();
+      if (!text) throw new Error("Paste JSON or choose a JSON file first.");
+      loadImportedPacket(JSON.parse(text), "Private browser import");
+    } catch (error) {
+      $("#importStatus").textContent = `Import failed: ${error.message}`;
+    }
+  });
+}
+
 function renderAll() {
   if (!state.data) return;
-  $("#modeSummary").textContent = getMode().description;
+  $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
   renderWatchlist();
   renderBrief();
   renderEvidence();
@@ -311,10 +480,12 @@ function renderAll() {
 async function init() {
   const response = await fetch("./data/placeholder-artists.json", { cache: "no-store" });
   state.data = await response.json();
+  state.defaultData = structuredClone(state.data);
   state.activeArtistId = state.data.artists[0].id;
   renderModeControl();
   renderTabs();
   bindNotesForm();
+  bindImportForm();
   renderAll();
 }
 
@@ -325,7 +496,7 @@ init().catch((error) => {
         <p class="eyebrow">Prototype load error</p>
         <h1>Artist Signal Intelligence</h1>
         <p>The local fixture data did not load. Serve this folder with a static file server and try again.</p>
-        <pre>${error.message}</pre>
+        <pre>${escapeHtml(error.message)}</pre>
       </section>
     </main>
   `;

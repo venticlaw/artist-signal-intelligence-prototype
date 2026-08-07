@@ -173,6 +173,15 @@ textarea {
   padding: 10px;
 }
 
+input[type="file"] {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid var(--strong-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
 .mode-summary,
 .safety-callout {
   padding: 14px 16px;
@@ -441,7 +450,9 @@ textarea {
   padding: 18px;
 }
 
-.notes-form button {
+.notes-form button,
+.import-panel button,
+.quiet-button {
   min-height: 44px;
   border: 0;
   border-radius: 8px;
@@ -449,6 +460,57 @@ textarea {
   background: var(--teal);
   font-weight: 950;
   cursor: pointer;
+}
+
+.quiet-button {
+  padding: 0 14px;
+  color: var(--teal-dark);
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.secondary-button {
+  color: var(--teal-dark) !important;
+  border: 1px solid var(--line) !important;
+  background: #fff !important;
+}
+
+.import-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.72fr);
+  gap: 14px;
+}
+
+.import-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.import-status {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.schema-box {
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #26313c;
+  white-space: pre-wrap;
 }
 
 .report-box {
@@ -496,6 +558,7 @@ footer {
   .detail-grid,
   .score-layout,
   .notes-grid,
+  .import-grid,
   .gate-grid {
     grid-template-columns: 1fr;
   }

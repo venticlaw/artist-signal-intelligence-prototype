@@ -43,6 +43,7 @@
         <button class="tab" type="button" data-tab="notes">A&R Notes</button>
         <button class="tab" type="button" data-tab="strategy">Strategy</button>
         <button class="tab" type="button" data-tab="report">Report Preview</button>
+        <button class="tab" type="button" data-tab="import">Private Import</button>
         <button class="tab" type="button" data-tab="gates">Approval Gates</button>
       </nav>
 
@@ -137,6 +138,45 @@
           <h2 id="report-title">Scouting report preview</h2>
         </div>
         <pre class="report-box" id="reportPreview"></pre>
+      </section>
+
+      <section class="tab-panel" id="import" aria-labelledby="import-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Browser-only real analysis intake</p>
+            <h2 id="import-title">Private import</h2>
+          </div>
+          <button class="quiet-button" type="button" id="resetFixturesButton">Reset fictional fixtures</button>
+        </div>
+        <div class="import-grid">
+          <form class="import-panel" id="importForm">
+            <label>
+              Load private artist-analysis JSON
+              <input id="importFile" type="file" accept="application/json,.json" />
+            </label>
+            <label>
+              Or paste JSON
+              <textarea id="importInput" rows="14" spellcheck="false"></textarea>
+            </label>
+            <div class="button-row">
+              <button type="submit">Load into dashboard</button>
+              <button class="secondary-button" type="button" id="sampleImportButton">Insert template</button>
+            </div>
+            <p class="import-status" id="importStatus">No private packet loaded. Current dashboard uses fictional fixtures.</p>
+          </form>
+          <aside class="detail-panel">
+            <h3>Import rules</h3>
+            <ul class="check-list">
+              <li>Runs only in this browser session.</li>
+              <li>No upload, backend, API call, or sync is performed.</li>
+              <li>Use manually reviewed public evidence only.</li>
+              <li>Do not publish imported real-artist packets to GitHub Pages.</li>
+              <li>Keep source URLs, confidence, observed dates, and unknowns explicit.</li>
+            </ul>
+            <h3>Expected shape</h3>
+            <pre class="schema-box" id="schemaPreview"></pre>
+          </aside>
+        </div>
       </section>
 
       <section class="tab-panel" id="gates" aria-labelledby="gates-title">
