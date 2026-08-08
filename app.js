@@ -10,7 +10,11 @@ const state = {
     minimumFit: 0,
     sort: "buyerFit"
   },
-  questionnairePacket: ""
+  questionnairePacket: "",
+  discovery: {
+    candidates: [],
+    packet: null
+  }
 };
 
 const dimensionLabels = {
@@ -40,6 +44,51 @@ const $ = (selector) => document.querySelector(selector);
 const confidenceLabels = ["High", "Medium", "Low", "Insufficient"];
 const sourceLabels = ["Observed", "Reported by artist/team", "Third-party public source", "Estimated", "Unknown"];
 const confidenceRank = { High: 4, Medium: 3, Low: 2, Insufficient: 1 };
+
+const discoverySampleRows = [
+  {
+    handle: "@fictional_signal_a",
+    displayName: "Fictional Signal A",
+    caption: "new hook demo from the east side alt rnb scene #altrnb #unsignedartist",
+    url: "https://www.tiktok.com/@fictional_signal_a/video/0000000000000000001",
+    soundTitle: "Original sound - Fictional Signal A",
+    hashtags: "altrnb,unsignedartist,eastside",
+    region: "US",
+    observedDate: "2026-08-08",
+    views: 18400,
+    likes: 2100,
+    comments: 184,
+    shares: 72
+  },
+  {
+    handle: "@fictional_signal_a",
+    displayName: "Fictional Signal A",
+    caption: "fans asking when the full version drops #altrnb #newmusic",
+    url: "https://www.tiktok.com/@fictional_signal_a/video/0000000000000000002",
+    soundTitle: "Original sound - Fictional Signal A",
+    hashtags: "altrnb,newmusic",
+    region: "US",
+    observedDate: "2026-08-08",
+    views: 9600,
+    likes: 980,
+    comments: 116,
+    shares: 35
+  },
+  {
+    handle: "@fictional_signal_b",
+    displayName: "Fictional Signal B",
+    caption: "bedroom pop chorus getting stitched by local creators #bedroompop #unsigned",
+    url: "https://www.tiktok.com/@fictional_signal_b/video/0000000000000000003",
+    soundTitle: "Original sound - Fictional Signal B",
+    hashtags: "bedroompop,unsigned",
+    region: "CA",
+    observedDate: "2026-08-08",
+    views: 22600,
+    likes: 1700,
+    comments: 88,
+    shares: 141
+  }
+];
 
 const importTemplate = {
   status: "private-browser-import",
@@ -720,6 +769,250 @@ function renderQuestionnairePacket() {
   $("#questionnairePreview").textContent = state.questionnairePacket;
 }
 
+function splitCsvLine(line) {
+  const cells = [];
+  let current = "";
+  let quoted = false;
+  for (const char of line) {
+    if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      cells.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current.trim());
+  return cells.map((cell) => cell.replace(/^"|"$/g, ""));
+}
+
+function parseDiscoveryRows(input) {
+  const text = input.trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) throw new Error("JSON discovery input must be an array.");
+    return parsed.map(normalizeDiscoveryRow);
+  } catch {
+    const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    if (lines.length < 2) throw new Error("CSV discovery input needs a header row and at least one result row.");
+    const headers = splitCsvLine(lines[0]).map((header) => header.trim());
+    return lines.slice(1).map((line) => {
+      const cells = splitCsvLine(line);
+      const row = Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""]));
+      return normalizeDiscoveryRow(row);
+    });
+  }
+}
+
+function normalizeDiscoveryRow(row) {
+  const handle = String(row.handle || row.username || "").trim();
+  const displayName = String(row.displayName || row.name || handle || "Unknown candidate").trim();
+  const caption = String(row.caption || row.description || "").trim();
+  const url = String(row.url || row.videoUrl || row.sourceUrl || "").trim();
+  const observedDate = String(row.observedDate || row.date || new Date().toISOString().slice(0, 10)).trim();
+  if (!handle) throw new Error("Each discovery row needs handle or username.");
+  if (!caption) throw new Error(`${handle} needs caption or description text.`);
+  if (!validEvidenceUrl(url, url === "Unknown" ? "Unknown" : "Observed")) {
+    throw new Error(`${handle} needs an https url, or Unknown.`);
+  }
+  if (!validDateOrUnknown(observedDate)) {
+    throw new Error(`${handle} needs observedDate as YYYY-MM-DD or Unknown.`);
+  }
+  return {
+    handle,
+    displayName,
+    caption,
+    url,
+    soundTitle: String(row.soundTitle || row.sound || "").trim(),
+    hashtags: String(row.hashtags || "").trim(),
+    region: String(row.region || row.region_code || "").trim(),
+    observedDate,
+    views: Number(row.views || row.view_count || 0) || 0,
+    likes: Number(row.likes || row.like_count || 0) || 0,
+    comments: Number(row.comments || row.comment_count || 0) || 0,
+    shares: Number(row.shares || row.share_count || 0) || 0
+  };
+}
+
+function scoreDiscoveryCandidate(rows) {
+  const totals = rows.reduce((sum, row) => ({
+    views: sum.views + row.views,
+    likes: sum.likes + row.likes,
+    comments: sum.comments + row.comments,
+    shares: sum.shares + row.shares
+  }), { views: 0, likes: 0, comments: 0, shares: 0 });
+  const engagementRate = totals.views ? (totals.likes + totals.comments + totals.shares) / totals.views : 0;
+  const repeatSignal = rows.length > 1 ? 1 : 0;
+  const commentQuality = totals.comments >= 100 ? 1 : totals.comments >= 25 ? 0.5 : 0;
+  const shareQuality = totals.shares >= 100 ? 1 : totals.shares >= 25 ? 0.5 : 0;
+  const score = Math.round(Math.min(100, (engagementRate * 500) + (repeatSignal * 18) + (commentQuality * 12) + (shareQuality * 12)));
+  return { ...totals, engagementRate, score };
+}
+
+function clusterDiscoveryRows(rows) {
+  const grouped = new Map();
+  rows.forEach((row) => {
+    const key = row.handle.toLowerCase();
+    const current = grouped.get(key) || [];
+    current.push(row);
+    grouped.set(key, current);
+  });
+
+  return [...grouped.values()].map((candidateRows) => {
+    const first = candidateRows[0];
+    const stats = scoreDiscoveryCandidate(candidateRows);
+    const tags = [...new Set(candidateRows.flatMap((row) => row.hashtags.split(/[,\s#]+/)).filter(Boolean))].slice(0, 8);
+    const sounds = [...new Set(candidateRows.map((row) => row.soundTitle).filter(Boolean))].slice(0, 4);
+    return {
+      handle: first.handle,
+      displayName: first.displayName,
+      rows: candidateRows,
+      stats,
+      tags,
+      sounds,
+      region: first.region || "Unknown",
+      observedDate: first.observedDate
+    };
+  }).sort((a, b) => b.stats.score - a.stats.score);
+}
+
+function discoveryScores(candidate) {
+  const score = candidate.stats.score;
+  return {
+    momentum: clampScore(Math.round(score / 5), 20),
+    engagement: clampScore(Math.round((candidate.stats.engagementRate || 0) * 180), 15),
+    community: clampScore(candidate.rows.length > 1 ? 8 : 4, 15),
+    catalog: 2,
+    relationships: clampScore(candidate.sounds.length + candidate.tags.length, 10),
+    live: 0,
+    press: 0,
+    reliability: clampScore(candidate.rows.length > 1 ? 6 : 4, 10)
+  };
+}
+
+function buildDiscoveryQueryPlan() {
+  const objective = $("#discoveryObjectiveInput").value.trim() || "Find emerging artists from approved TikTok result rows.";
+  const seeds = $("#discoverySeedsInput").value.split(/[\n,]+/).map((seed) => seed.trim()).filter(Boolean);
+  return [
+    `# TikTok Discovery Query Plan`,
+    ``,
+    `Status: No live calls from this prototype`,
+    `Objective: ${objective}`,
+    ``,
+    `## Seed Terms`,
+    ...(seeds.length ? seeds.map((seed) => `- ${seed}`) : [`- No seed terms entered.`]),
+    ``,
+    `## Approved Connector Fields`,
+    `- keyword`,
+    `- hashtag_name`,
+    `- username`,
+    `- music_id`,
+    `- region_code`,
+    `- start_date / end_date`,
+    ``,
+    `## Review Rule`,
+    `Use only approved API/vendor/manual rows. Do not scrape, login-scrape, automate browser extraction, or publish real-artist rankings.`
+  ].join("\n");
+}
+
+function buildDiscoveryPacket(candidates) {
+  const createdAt = new Date().toISOString().slice(0, 10);
+  const sourceLabel = (url) => url && url !== "Unknown" ? "Observed" : "Unknown";
+  return {
+    status: "private-browser-import",
+    reviewMode: "manual-public-evidence-only",
+    analyst: "ASI Discovery Workbench",
+    createdAt,
+    publicationApproval: "not-approved",
+    dataPolicy: "Approved/manual TikTok result rows only. No scraping, paid/gated/login-only sources, private data, outreach, or automated browser extraction.",
+    artists: candidates.map((candidate, index) => ({
+      id: `tiktok-candidate-${index + 1}-${safeFileSegment(candidate.handle)}`,
+      name: `${candidate.displayName} (${candidate.handle})`,
+      stage: "TikTok discovery candidate",
+      scene: [candidate.region !== "Unknown" ? `Region ${candidate.region}` : "Region unknown", candidate.tags.length ? `Tags: ${candidate.tags.join(", ")}` : "Tags pending"].join(". "),
+      summary: `Candidate clustered from ${candidate.rows.length} approved/manual TikTok result row(s). Discovery score ${candidate.stats.score}/100 based on visible row-level engagement and repeat-signal count.`,
+      scores: discoveryScores(candidate),
+      confidence: candidate.rows.length > 1 ? "Medium" : "Low",
+      recommendation: candidate.stats.score >= 45 ? "Needs human review for artist validation and source expansion." : "Watch only after more manually reviewed evidence.",
+      strategy: "Confirm this is an artist account, validate catalog/off-platform presence, then add source-separated evidence before any buyer recommendation.",
+      disconfirmingEvidence: "Account is not an artist, engagement is trend-only, the sound is not original or artist-affiliated, or follow-up public evidence does not support music-market traction.",
+      risks: [
+        "TikTok row-level signal may not map to listener behavior",
+        "Candidate identity needs human validation",
+        "No outreach or public ranking approved"
+      ],
+      developments: candidate.rows.map((row) => ({
+        date: row.observedDate,
+        type: "TikTok public result row",
+        detail: row.caption,
+        sourceUrl: row.url,
+        confidence: "Low",
+        buyerRelevance: `Visible engagement row: ${row.views} views, ${row.likes} likes, ${row.comments} comments, ${row.shares} shares.`,
+        scoreImpact: "Momentum and engagement proxy"
+      })),
+      relationships: candidate.sounds.map((sound) => ({
+        type: "Sound context",
+        name: sound,
+        evidence: `Repeated or associated sound context observed in approved/manual result rows for ${candidate.handle}.`,
+        sourceUrl: candidate.rows[0]?.url || "Unknown",
+        confidence: "Low",
+        scoreUse: "Context only until reviewed"
+      })),
+      feedbackLearning: {
+        expectedPassReason: "Needs human review",
+        missingContext: "Catalog, artist identity, originality of sound, and off-platform evidence.",
+        misleadingSignalRisk: "TikTok engagement may be creator trend behavior rather than artist demand.",
+        suggestedModelAdjustment: "Treat TikTok discovery as candidate generation, not final scoring."
+      },
+      signals: [
+        {
+          category: "TikTok discovery momentum",
+          label: sourceLabel(candidate.rows[0]?.url),
+          observedDate: candidate.observedDate,
+          sourceUrl: candidate.rows[0]?.url || "Unknown",
+          freshness: candidate.observedDate,
+          confidence: candidate.rows.length > 1 ? "Medium" : "Low",
+          detail: `${candidate.rows.length} approved/manual result row(s), ${candidate.stats.views} total visible views, ${candidate.stats.comments} comments, ${candidate.stats.shares} shares.`
+        }
+      ]
+    }))
+  };
+}
+
+function renderDiscoveryWorkbench() {
+  $("#queryPlanPreview").textContent = buildDiscoveryQueryPlan();
+  const candidates = state.discovery.candidates;
+  $("#candidateList").innerHTML = candidates.length
+    ? candidates.map((candidate) => `
+      <article class="candidate-card">
+        <div class="card-topline">
+          <div>
+            <p class="eyebrow">${escapeHtml(candidate.handle)}</p>
+            <h3>${escapeHtml(candidate.displayName)}</h3>
+          </div>
+          <div class="score-badge small-badge">${candidate.stats.score}</div>
+        </div>
+        <p class="summary">${candidate.rows.length} row(s), ${candidate.stats.views} views, ${candidate.stats.comments} comments, ${candidate.stats.shares} shares.</p>
+        <div class="tag-row">
+          ${candidate.tags.map((tag) => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")}
+          <span class="tag">${escapeHtml(candidate.region)}</span>
+        </div>
+      </article>
+    `).join("")
+    : `
+      <article class="empty-state">
+        <p class="eyebrow">No candidate clusters</p>
+        <h3>Paste approved/manual rows</h3>
+        <p class="summary">The workbench clusters pasted rows by handle and converts them into a private ASI packet.</p>
+      </article>
+    `;
+  $("#discoveryPacketPreview").textContent = state.discovery.packet
+    ? JSON.stringify(state.discovery.packet, null, 2)
+    : "No ASI packet generated yet.";
+}
+
 function currentReportText() {
   return $("#reportPreview").textContent || "";
 }
@@ -1096,6 +1389,64 @@ function bindQuestionnaireForm() {
   });
 }
 
+function bindDiscoveryForm() {
+  $("#discoveryObjectiveInput").addEventListener("input", renderDiscoveryWorkbench);
+  $("#discoverySeedsInput").addEventListener("input", renderDiscoveryWorkbench);
+
+  $("#sampleDiscoveryButton").addEventListener("click", () => {
+    $("#discoveryRowsInput").value = JSON.stringify(discoverySampleRows, null, 2);
+    $("#discoverySeedsInput").value = "alt rnb\nunsigned artist\nnew music\nlocal scene\noriginal sound";
+    $("#discoveryObjectiveInput").value = "Find emerging artist candidates from approved TikTok-style result rows";
+    $("#discoveryStatus").textContent = "Inserted fictional sample rows. Replace with approved/manual data before private analysis.";
+    state.discovery.candidates = [];
+    state.discovery.packet = null;
+    renderDiscoveryWorkbench();
+  });
+
+  $("#copyQueryPlanButton").addEventListener("click", async () => {
+    try {
+      const plan = buildDiscoveryQueryPlan();
+      if (!navigator.clipboard?.writeText) {
+        $("#discoveryStatus").textContent = "Copy is unavailable in this browser. Select the query plan manually.";
+        return;
+      }
+      await navigator.clipboard.writeText(plan);
+      $("#discoveryStatus").textContent = "Copied query plan. No live TikTok call was made.";
+    } catch (error) {
+      $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#copyDiscoveryPacketButton").addEventListener("click", async () => {
+    try {
+      if (!state.discovery.packet) throw new Error("Cluster candidates first.");
+      if (!navigator.clipboard?.writeText) {
+        $("#discoveryStatus").textContent = "Copy is unavailable in this browser. Select the packet manually.";
+        return;
+      }
+      await navigator.clipboard.writeText(JSON.stringify(state.discovery.packet, null, 2));
+      $("#discoveryStatus").textContent = "Copied ASI private import packet. Keep real candidates private.";
+    } catch (error) {
+      $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#discoveryForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const rows = parseDiscoveryRows($("#discoveryRowsInput").value);
+      if (!rows.length) throw new Error("Paste approved/manual result rows first.");
+      const candidates = clusterDiscoveryRows(rows);
+      state.discovery.candidates = candidates;
+      state.discovery.packet = buildDiscoveryPacket(candidates);
+      $("#discoveryStatus").textContent = `Clustered ${rows.length} row(s) into ${candidates.length} candidate(s). No live TikTok call was made.`;
+      renderDiscoveryWorkbench();
+    } catch (error) {
+      $("#discoveryStatus").textContent = `Discovery failed: ${error.message}`;
+    }
+  });
+}
+
 function renderAll() {
   if (!state.data) return;
   $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
@@ -1110,6 +1461,7 @@ function renderAll() {
   renderStrategy();
   renderReport();
   renderQuestionnairePacket();
+  renderDiscoveryWorkbench();
   renderGates();
 }
 
@@ -1125,6 +1477,7 @@ async function init() {
   bindImportForm();
   bindExportActions();
   bindQuestionnaireForm();
+  bindDiscoveryForm();
   renderAll();
 }
 

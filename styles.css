@@ -381,6 +381,18 @@ input[type="number"] {
   gap: 14px;
 }
 
+.discovery-grid {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
+  gap: 16px;
+}
+
+.discovery-results,
+.candidate-list {
+  display: grid;
+  gap: 14px;
+}
+
 .detail-panel {
   padding: 18px;
 }
@@ -748,7 +760,7 @@ body::before {
   content: "";
   background:
     linear-gradient(180deg, rgba(6, 8, 7, 0.08), rgba(6, 8, 7, 0.82)),
-    url("./assets/asi-signal-texture.png?v=20260808-label-refresh") center / cover no-repeat;
+    url("./assets/asi-signal-texture.png?v=20260808-discovery-workbench") center / cover no-repeat;
   opacity: 0.86;
 }
 
@@ -987,6 +999,13 @@ textarea::placeholder {
   box-shadow: 0 10px 30px rgba(35, 199, 163, 0.18);
 }
 
+.small-badge {
+  width: 56px;
+  height: 56px;
+  border-width: 4px;
+  font-size: 1.05rem;
+}
+
 .mini-label {
   color: rgba(216, 173, 85, 0.82);
   letter-spacing: 0.08em;
@@ -1003,7 +1022,8 @@ textarea::placeholder {
 .stat,
 .evidence-item,
 .timeline-item,
-.network-edge {
+.network-edge,
+.candidate-card {
   border-color: rgba(234, 214, 161, 0.14);
   background: rgba(255, 255, 255, 0.045);
 }
@@ -1023,7 +1043,8 @@ textarea::placeholder {
 }
 
 .timeline-item,
-.network-edge {
+.network-edge,
+.candidate-card {
   position: relative;
   display: grid;
   gap: 10px;
@@ -1108,6 +1129,10 @@ textarea::placeholder {
     rgba(7, 10, 9, 0.86);
 }
 
+.tall-schema {
+  max-height: 520px;
+}
+
 .gate-card {
   background:
     linear-gradient(180deg, rgba(255, 108, 85, 0.12), rgba(255, 108, 85, 0.035)),
@@ -1126,7 +1151,8 @@ footer {
 @media (max-width: 1000px) {
   .filter-bar,
   .timeline-layout,
-  .learning-grid {
+  .learning-grid,
+  .discovery-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -1142,7 +1168,8 @@ footer {
 
   .filter-bar,
   .timeline-layout,
-  .learning-grid {
+  .learning-grid,
+  .discovery-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -16,6 +16,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Strategy recommendation and disconfirming evidence.
 - Browser-local Markdown scouting report copy/download.
 - Buyer requirements questionnaire with browser-local packet copy/download.
+- TikTok Discovery Workbench for query planning, approved/manual result-row clustering, and ASI private packet generation.
 - Strict private JSON import for manually reviewed public evidence.
 - Approval gate view for blocked actions.
 
@@ -29,6 +30,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Private import runs only in the browser session from a local JSON file or pasted JSON.
 - Report copy/download runs only in the browser and creates Markdown from the currently loaded packet.
 - Questionnaire packet copy/download runs only in the browser.
+- TikTok Discovery Workbench does not call TikTok, scrape, login-scrape, automate browser extraction, or store results; it only processes pasted approved/manual rows in the browser.
 - Approval-gated actions are displayed as blocked actions, not active controls.
 
 ## Local Run

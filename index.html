@@ -8,7 +8,7 @@
       content="Artist Signal Intelligence static prototype for public-safe A&R signal review."
     />
     <title>Artist Signal Intelligence Prototype</title>
-    <link rel="stylesheet" href="./styles.css?v=20260808-label-refresh" />
+    <link rel="stylesheet" href="./styles.css?v=20260808-discovery-workbench" />
   </head>
   <body>
     <header class="topbar">
@@ -47,6 +47,7 @@
         <button class="tab" type="button" data-tab="strategy">Strategy</button>
         <button class="tab" type="button" data-tab="report">Report Preview</button>
         <button class="tab" type="button" data-tab="questionnaire">Questionnaire</button>
+        <button class="tab" type="button" data-tab="discovery">TikTok Discovery</button>
         <button class="tab" type="button" data-tab="import">Private Import</button>
         <button class="tab" type="button" data-tab="gates">Approval Gates</button>
       </nav>
@@ -269,6 +270,54 @@
         </div>
       </section>
 
+      <section class="tab-panel" id="discovery" aria-labelledby="discovery-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Approved-source discovery</p>
+            <h2 id="discovery-title">TikTok discovery workbench</h2>
+          </div>
+          <div class="export-actions" aria-label="Discovery packet controls">
+            <button class="secondary-button" type="button" id="sampleDiscoveryButton">Insert sample rows</button>
+            <button type="button" id="copyDiscoveryPacketButton">Copy ASI Packet</button>
+          </div>
+        </div>
+        <div class="discovery-grid">
+          <form class="import-panel" id="discoveryForm">
+            <label>
+              Discovery objective
+              <input id="discoveryObjectiveInput" type="search" placeholder="Find unsigned alt-R&B artists gaining early creator pull" />
+            </label>
+            <label>
+              Query seeds
+              <textarea id="discoverySeedsInput" rows="5" spellcheck="false" placeholder="hashtags, keywords, scene terms, city names, sound IDs, usernames"></textarea>
+            </label>
+            <label>
+              Approved/manual result rows
+              <textarea id="discoveryRowsInput" rows="14" spellcheck="false" placeholder="Paste CSV rows or JSON array from an approved source. Required columns/fields: handle, displayName, caption, url. Optional: soundTitle, hashtags, region, observedDate, views, likes, comments, shares."></textarea>
+            </label>
+            <div class="button-row">
+              <button type="submit">Cluster candidates</button>
+              <button class="secondary-button" type="button" id="copyQueryPlanButton">Copy Query Plan</button>
+            </div>
+            <p class="import-status" id="discoveryStatus">No live TikTok calls run here. Paste only approved/manual results.</p>
+          </form>
+          <div class="discovery-results">
+            <article class="detail-panel">
+              <h3>Query plan</h3>
+              <pre class="schema-box" id="queryPlanPreview"></pre>
+            </article>
+            <article class="detail-panel">
+              <h3>Candidate clusters</h3>
+              <div class="candidate-list" id="candidateList"></div>
+            </article>
+            <article class="detail-panel">
+              <h3>ASI private packet preview</h3>
+              <pre class="schema-box tall-schema" id="discoveryPacketPreview"></pre>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section class="tab-panel" id="import" aria-labelledby="import-title">
         <div class="section-heading">
           <div>
@@ -322,6 +371,6 @@
       <span>Fictional fixtures only.</span>
     </footer>
 
-    <script src="./app.js?v=20260808-label-refresh"></script>
+    <script src="./app.js?v=20260808-discovery-workbench"></script>
   </body>
 </html>
