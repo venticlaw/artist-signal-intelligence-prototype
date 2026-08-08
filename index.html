@@ -8,7 +8,7 @@
       content="A&R prospect review dashboard."
     />
     <title>A&R Prospect Desk</title>
-    <link rel="stylesheet" href="./styles.css?v=20260808-live-cleanup" />
+    <link rel="stylesheet" href="./styles.css?v=20260808-target-discovery" />
   </head>
   <body>
     <header class="topbar">
@@ -48,6 +48,7 @@
         <button class="tab" type="button" data-tab="strategy">Strategy</button>
         <button class="tab" type="button" data-tab="report">Report</button>
         <button class="tab" type="button" data-tab="questionnaire">Requirements</button>
+        <button class="tab" type="button" data-tab="target-discovery">Target Discovery</button>
         <button class="tab" type="button" data-tab="discovery">TikTok Discovery</button>
         <button class="tab" type="button" data-tab="import">Local Import</button>
         <button class="tab" type="button" data-tab="gates">Controls</button>
@@ -290,6 +291,51 @@
         </div>
       </section>
 
+      <section class="tab-panel" id="target-discovery" aria-labelledby="target-discovery-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Daily surge search</p>
+            <h2 id="target-discovery-title">Target discovery</h2>
+          </div>
+          <div class="export-actions" aria-label="Target discovery controls">
+            <button class="secondary-button" type="button" id="sampleTargetsButton">Insert target profile</button>
+            <button class="secondary-button" type="button" id="copyTargetPlanButton">Copy Daily Plan</button>
+            <button type="button" id="copySurgeQueueButton">Copy Surge Queue</button>
+          </div>
+        </div>
+        <div class="discovery-grid">
+          <form class="import-panel" id="targetDiscoveryForm">
+            <label>
+              Target artist profiles
+              <textarea id="targetProfilesInput" rows="13" spellcheck="false" placeholder="Paste JSON array of target artist profiles. Fields: targetId, name, genreLane, regionFocus, similarArtists, soundSeeds, hashtagSeeds, exclude, reviewGoal."></textarea>
+            </label>
+            <label>
+              Daily source rows
+              <textarea id="targetRowsInput" rows="12" spellcheck="false" placeholder="Paste approved daily rows as CSV or JSON. Add targetId/querySeed/queryOrbit when available. Required: handle, displayName, caption, url. Optional: hashtags, soundTitle, region, views, likes, comments, shares, uses, saves."></textarea>
+            </label>
+            <div class="button-row">
+              <button type="submit">Score surge candidates</button>
+              <button class="secondary-button" type="button" id="copyTargetSchemaButton">Copy Schema</button>
+            </div>
+            <p class="import-status" id="targetDiscoveryStatus">Target profiles generate daily query plans. Source rows must come from approved data paths.</p>
+          </form>
+          <div class="discovery-results">
+            <article class="detail-panel">
+              <h3>Daily query plan</h3>
+              <pre class="schema-box tall-schema" id="targetPlanPreview"></pre>
+            </article>
+            <article class="detail-panel">
+              <h3>Surge candidates</h3>
+              <div class="candidate-list" id="surgeCandidateList"></div>
+            </article>
+            <article class="detail-panel">
+              <h3>Human review queue</h3>
+              <pre class="schema-box tall-schema" id="surgeQueuePreview"></pre>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section class="tab-panel" id="discovery" aria-labelledby="discovery-title">
         <div class="section-heading">
           <div>
@@ -411,6 +457,6 @@
       <span>Session-only review surface</span>
     </footer>
 
-    <script src="./app.js?v=20260808-live-cleanup"></script>
+    <script src="./app.js?v=20260808-target-discovery"></script>
   </body>
 </html>

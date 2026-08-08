@@ -16,6 +16,11 @@ const state = {
     candidates: [],
     packet: null,
     apiPacket: null
+  },
+  targetDiscovery: {
+    profiles: [],
+    candidates: [],
+    reviewQueue: null
   }
 };
 
@@ -90,6 +95,84 @@ const discoverySampleRows = [
     likes: 1700,
     comments: 88,
     shares: 141
+  }
+];
+
+const targetProfileSample = [
+  {
+    targetId: "northline-vale",
+    name: "Northline Vale",
+    priority: "high",
+    genreLane: "Alternative hip-hop / rap",
+    regionFocus: ["US", "Mid-Atlantic", "college towns", "secondary markets"],
+    similarArtists: ["Artist Alpha", "Artist Beta", "Artist Gamma", "Artist Delta"],
+    soundSeeds: ["distorted drums", "left-field rap", "melodic rage", "DIY videos", "underground rap"],
+    hashtagSeeds: ["altrap", "undergroundrap", "newartist", "originalsound", "raptok"],
+    exclude: ["major-label established acts", "non-artist creator accounts", "fan pages", "repost-only accounts", "parody-only accounts"],
+    reviewGoal: "Find adjacent emerging artists with similar audience behavior, sound palette, or scene/community context."
+  }
+];
+
+const targetRowsSample = [
+  {
+    targetId: "northline-vale",
+    queryOrbit: "genre-scene",
+    querySeed: "left-field rap",
+    handle: "@daily_signal_a",
+    displayName: "Daily Signal A",
+    caption: "new original sound from a regional underground rap artist #altrap #undergroundrap #newmusic",
+    url: "https://www.tiktok.com/@daily_signal_a/video/0000000000000000101",
+    sourcePlatform: "TikTok",
+    soundTitle: "Original sound - Daily Signal A",
+    hashtags: "altrap,undergroundrap,newmusic",
+    region: "US",
+    observedDate: "2026-08-08",
+    views: 48200,
+    likes: 6200,
+    comments: 380,
+    shares: 420,
+    saves: 0,
+    uses: 0
+  },
+  {
+    targetId: "northline-vale",
+    queryOrbit: "sound-orbit",
+    querySeed: "distorted drums",
+    handle: "@daily_signal_a",
+    displayName: "Daily Signal A",
+    caption: "fans asking for the full version after a distorted drum snippet #newartist #originalsound",
+    url: "https://www.tiktok.com/@daily_signal_a/video/0000000000000000102",
+    sourcePlatform: "TikTok",
+    soundTitle: "Original sound - Daily Signal A",
+    hashtags: "newartist,originalsound",
+    region: "US",
+    observedDate: "2026-08-08",
+    views: 21100,
+    likes: 2400,
+    comments: 210,
+    shares: 160,
+    saves: 0,
+    uses: 0
+  },
+  {
+    targetId: "northline-vale",
+    queryOrbit: "similar-artist",
+    querySeed: "melodic rage",
+    handle: "@daily_signal_b",
+    displayName: "Daily Signal B",
+    caption: "alt rap hook test with a darker melodic pocket #altrap #newmusic",
+    url: "https://www.tiktok.com/@daily_signal_b/video/0000000000000000103",
+    sourcePlatform: "TikTok",
+    soundTitle: "Original sound - Daily Signal B",
+    hashtags: "altrap,newmusic",
+    region: "US",
+    observedDate: "2026-08-08",
+    views: 8200,
+    likes: 740,
+    comments: 32,
+    shares: 18,
+    saves: 0,
+    uses: 0
   }
 ];
 
@@ -915,10 +998,14 @@ function normalizeDiscoveryRow(row) {
     throw new Error(`${handle} needs observedDate as YYYY-MM-DD or Unknown.`);
   }
   return {
+    targetId: String(row.targetId || row.target_id || "").trim(),
+    queryOrbit: String(row.queryOrbit || row.query_orbit || "").trim(),
+    querySeed: String(row.querySeed || row.query_seed || "").trim(),
     handle,
     displayName,
     caption,
     url,
+    sourcePlatform: String(row.sourcePlatform || row.platform || "TikTok").trim(),
     soundTitle: String(row.soundTitle || row.sound || "").trim(),
     hashtags: String(row.hashtags || "").trim(),
     region: String(row.region || row.region_code || "").trim(),
@@ -926,7 +1013,9 @@ function normalizeDiscoveryRow(row) {
     views: Number(row.views || row.view_count || 0) || 0,
     likes: Number(row.likes || row.like_count || 0) || 0,
     comments: Number(row.comments || row.comment_count || 0) || 0,
-    shares: Number(row.shares || row.share_count || 0) || 0
+    shares: Number(row.shares || row.share_count || 0) || 0,
+    saves: Number(row.saves || row.save_count || 0) || 0,
+    uses: Number(row.uses || row.use_count || 0) || 0
   };
 }
 
@@ -935,9 +1024,11 @@ function scoreDiscoveryCandidate(rows) {
     views: sum.views + row.views,
     likes: sum.likes + row.likes,
     comments: sum.comments + row.comments,
-    shares: sum.shares + row.shares
-  }), { views: 0, likes: 0, comments: 0, shares: 0 });
-  const engagementRate = totals.views ? (totals.likes + totals.comments + totals.shares) / totals.views : 0;
+    shares: sum.shares + row.shares,
+    saves: sum.saves + (row.saves || 0),
+    uses: sum.uses + (row.uses || 0)
+  }), { views: 0, likes: 0, comments: 0, shares: 0, saves: 0, uses: 0 });
+  const engagementRate = totals.views ? (totals.likes + totals.comments + totals.shares + totals.saves) / totals.views : 0;
   const repeatSignal = rows.length > 1 ? 1 : 0;
   const commentQuality = totals.comments >= 100 ? 1 : totals.comments >= 25 ? 0.5 : 0;
   const shareQuality = totals.shares >= 100 ? 1 : totals.shares >= 25 ? 0.5 : 0;
@@ -984,6 +1075,241 @@ function discoveryScores(candidate) {
     press: 0,
     reliability: clampScore(candidate.rows.length > 1 ? 6 : 4, 10)
   };
+}
+
+function normalizeTargetProfile(profile, index) {
+  if (!profile || typeof profile !== "object") {
+    throw new Error(`Target profile ${index + 1} is not an object.`);
+  }
+  const name = String(profile.name || "").trim();
+  const targetId = String(profile.targetId || profile.id || safeFileSegment(name)).trim();
+  if (!name) throw new Error(`Target profile ${index + 1} needs a name.`);
+  if (!targetId) throw new Error(`${name} needs targetId.`);
+  const arrayField = (value) => Array.isArray(value)
+    ? value.map((item) => String(item).trim()).filter(Boolean)
+    : String(value || "").split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
+  return {
+    targetId,
+    name,
+    priority: String(profile.priority || "medium").trim(),
+    genreLane: String(profile.genreLane || profile.genre || "Unspecified").trim(),
+    regionFocus: arrayField(profile.regionFocus || profile.regions),
+    similarArtists: arrayField(profile.similarArtists || profile.comparables),
+    soundSeeds: arrayField(profile.soundSeeds || profile.sounds),
+    hashtagSeeds: arrayField(profile.hashtagSeeds || profile.hashtags),
+    exclude: arrayField(profile.exclude),
+    reviewGoal: String(profile.reviewGoal || "Find adjacent emerging artists with similar public signal.").trim()
+  };
+}
+
+function parseTargetProfiles(input) {
+  const text = input.trim();
+  if (!text) return [];
+  const parsed = JSON.parse(text);
+  const profiles = Array.isArray(parsed) ? parsed : parsed.profiles;
+  if (!Array.isArray(profiles)) throw new Error("Target profiles must be a JSON array or an object with profiles.");
+  return profiles.map(normalizeTargetProfile);
+}
+
+function buildTargetQueryPlan(profiles = state.targetDiscovery.profiles) {
+  const createdAt = new Date().toISOString().slice(0, 10);
+  return {
+    status: "daily-target-query-plan",
+    createdAt,
+    cadence: "daily",
+    sourcePolicy: "Approved API/vendor/manual rows only. No scraping, no browser automation, no outbound actions.",
+    targets: profiles.map((profile) => ({
+      targetId: profile.targetId,
+      name: profile.name,
+      priority: profile.priority,
+      reviewGoal: profile.reviewGoal,
+      querySets: [
+        {
+          orbit: "target-exact",
+          seeds: [profile.name, ...profile.soundSeeds.slice(0, 4)]
+        },
+        {
+          orbit: "similar-artist",
+          seeds: profile.similarArtists
+        },
+        {
+          orbit: "genre-scene",
+          seeds: [profile.genreLane, ...profile.regionFocus, ...profile.hashtagSeeds]
+        },
+        {
+          orbit: "breakout-behavior",
+          seeds: ["original sound", "unreleased snippet", "full version", "new music", "fan comments"]
+        }
+      ],
+      exclude: profile.exclude
+    })),
+    rowContract: {
+      targetId: "target profile id",
+      queryOrbit: "target-exact | similar-artist | genre-scene | breakout-behavior",
+      querySeed: "seed term that produced the row",
+      handle: "@candidate",
+      displayName: "candidate display name",
+      caption: "public caption or description",
+      url: "https source URL",
+      sourcePlatform: "TikTok or approved provider platform",
+      soundTitle: "sound title or music id",
+      hashtags: "comma-separated hashtags",
+      region: "region code or public region context",
+      observedDate: "YYYY-MM-DD",
+      views: "number",
+      likes: "number",
+      comments: "number",
+      shares: "number",
+      saves: "number when available",
+      uses: "sound-use count when available"
+    }
+  };
+}
+
+function tokenSet(items) {
+  return new Set(
+    items
+      .flatMap((item) => String(item || "").toLowerCase().split(/[^a-z0-9$&]+/))
+      .map((item) => item.trim())
+      .filter((item) => item.length > 2)
+  );
+}
+
+function rowText(row) {
+  return [
+    row.targetId,
+    row.queryOrbit,
+    row.querySeed,
+    row.handle,
+    row.displayName,
+    row.caption,
+    row.soundTitle,
+    row.hashtags,
+    row.region
+  ].join(" ").toLowerCase();
+}
+
+function scoreTargetFit(row, profile) {
+  const profileTokens = tokenSet([
+    profile.name,
+    profile.genreLane,
+    ...profile.regionFocus,
+    ...profile.similarArtists,
+    ...profile.soundSeeds,
+    ...profile.hashtagSeeds
+  ]);
+  const text = rowText(row);
+  const matches = [...profileTokens].filter((token) => text.includes(token)).length;
+  const directTarget = row.targetId && row.targetId === profile.targetId ? 6 : 0;
+  return clampScore((matches * 3) + directTarget, 20);
+}
+
+function scoreSurgeCandidate(candidate, profiles) {
+  const rows = candidate.rows;
+  const profile = profiles.find((item) => item.targetId === candidate.targetId) || profiles[0];
+  const stats = scoreDiscoveryCandidate(rows);
+  const targetFit = profile ? Math.max(...rows.map((row) => scoreTargetFit(row, profile))) : 0;
+  const engagementRate = stats.views ? (stats.likes + stats.comments + stats.shares + stats.saves) / stats.views : 0;
+  const velocity = clampScore(Math.round(Math.log10(Math.max(1, stats.views)) * 6), 20);
+  const engagementQuality = clampScore(Math.round(engagementRate * 170) + (stats.comments >= 100 ? 3 : 0) + (stats.shares >= 100 ? 3 : 0), 15);
+  const repeatSignal = clampScore((rows.length > 1 ? 8 : 0) + Math.min(7, (candidate.sounds.length + candidate.tags.length)), 15);
+  const sourceReliability = clampScore(rows.filter((row) => row.url !== "Unknown").length * 4 + rows.filter((row) => row.querySeed).length * 2, 10);
+  const novelty = clampScore(candidate.handle.toLowerCase().includes(profile?.name.toLowerCase() || "") ? 2 : 8, 10);
+  const catalogValidation = clampScore(rowText(rows[0]).includes("artist") || rowText(rows[0]).includes("music") || rowText(rows[0]).includes("song") ? 7 : 3, 10);
+  const score = targetFit + velocity + engagementQuality + repeatSignal + sourceReliability + novelty + catalogValidation;
+  const decision = score >= 75 ? "Shortlist" : score >= 55 ? "Daily review" : score >= 35 ? "Watch" : "Ignore";
+  return {
+    score,
+    decision,
+    dimensions: {
+      targetFit,
+      velocity,
+      engagementQuality,
+      repeatSignal,
+      sourceReliability,
+      novelty,
+      catalogValidation
+    },
+    stats
+  };
+}
+
+function clusterTargetRows(rows, profiles) {
+  const grouped = new Map();
+  rows.forEach((row) => {
+    const key = `${row.targetId || "unmapped"}::${row.handle.toLowerCase()}`;
+    const current = grouped.get(key) || [];
+    current.push(row);
+    grouped.set(key, current);
+  });
+  return [...grouped.values()].map((candidateRows) => {
+    const first = candidateRows[0];
+    const tags = [...new Set(candidateRows.flatMap((row) => row.hashtags.split(/[,\s#]+/)).filter(Boolean))].slice(0, 8);
+    const sounds = [...new Set(candidateRows.map((row) => row.soundTitle).filter(Boolean))].slice(0, 4);
+    const candidate = {
+      targetId: first.targetId || profiles[0]?.targetId || "unmapped",
+      querySeeds: [...new Set(candidateRows.map((row) => row.querySeed).filter(Boolean))],
+      queryOrbits: [...new Set(candidateRows.map((row) => row.queryOrbit).filter(Boolean))],
+      handle: first.handle,
+      displayName: first.displayName,
+      rows: candidateRows,
+      tags,
+      sounds,
+      region: first.region || "Unknown",
+      observedDate: first.observedDate
+    };
+    return {
+      ...candidate,
+      surge: scoreSurgeCandidate(candidate, profiles)
+    };
+  }).sort((a, b) => b.surge.score - a.surge.score);
+}
+
+function buildHumanReviewQueue(candidates, profiles) {
+  return {
+    status: "human-review-queue",
+    createdAt: new Date().toISOString().slice(0, 10),
+    reviewRule: "Human reviewer must validate artist identity, catalog, source confidence, duplicate status, and target-fit reason before dashboard import.",
+    candidates: candidates.map((candidate) => {
+      const profile = profiles.find((item) => item.targetId === candidate.targetId);
+      return {
+        targetId: candidate.targetId,
+        targetName: profile?.name || "Unmapped target",
+        handle: candidate.handle,
+        displayName: candidate.displayName,
+        surgeScore: candidate.surge.score,
+        decision: candidate.surge.decision,
+        dimensions: candidate.surge.dimensions,
+        querySeeds: candidate.querySeeds,
+        strongestSignal: `${candidate.rows.length} row(s), ${candidate.surge.stats.views} visible views, ${candidate.surge.stats.comments} comments, ${candidate.surge.stats.shares} shares.`,
+        reviewFields: {
+          isArtistAccount: "uncertain",
+          catalogFound: "uncertain",
+          targetFitReason: "pending human review",
+          weakestSignal: "pending human review",
+          duplicateOf: "",
+          reviewDecision: candidate.surge.decision,
+          passReason: "",
+          sourceConfidence: candidate.surge.dimensions.sourceReliability >= 8 ? "Medium" : "Low",
+          nextValidationStep: "Confirm catalog and short-form repeat signal."
+        },
+        sourceRows: candidate.rows.map((row) => ({
+          url: row.url,
+          caption: row.caption,
+          observedDate: row.observedDate,
+          queryOrbit: row.queryOrbit,
+          querySeed: row.querySeed
+        }))
+      };
+    })
+  };
+}
+
+function targetDiscoverySchema() {
+  return JSON.stringify({
+    targetProfiles: targetProfileSample,
+    dailyRows: targetRowsSample
+  }, null, 2);
 }
 
 function selectedApiProvider() {
@@ -1211,6 +1537,40 @@ function renderDiscoveryWorkbench() {
   $("#discoveryPacketPreview").textContent = state.discovery.packet
     ? JSON.stringify(state.discovery.packet, null, 2)
     : "No ASI packet generated yet.";
+}
+
+function renderTargetDiscovery() {
+  const profiles = state.targetDiscovery.profiles;
+  const candidates = state.targetDiscovery.candidates;
+  $("#targetPlanPreview").textContent = JSON.stringify(buildTargetQueryPlan(profiles), null, 2);
+  $("#surgeCandidateList").innerHTML = candidates.length
+    ? candidates.map((candidate) => `
+      <article class="candidate-card">
+        <div class="card-topline">
+          <div>
+            <p class="eyebrow">${escapeHtml(candidate.targetId)} / ${escapeHtml(candidate.handle)}</p>
+            <h3>${escapeHtml(candidate.displayName)}</h3>
+          </div>
+          <div class="score-badge small-badge">${candidate.surge.score}</div>
+        </div>
+        <p class="summary">${escapeHtml(candidate.surge.decision)}. ${candidate.rows.length} row(s), ${candidate.surge.stats.views} views, ${candidate.surge.stats.comments} comments, ${candidate.surge.stats.shares} shares.</p>
+        <div class="tag-row">
+          ${candidate.queryOrbits.map((orbit) => `<span class="tag">${escapeHtml(orbit)}</span>`).join("")}
+          ${candidate.querySeeds.map((seed) => `<span class="tag">${escapeHtml(seed)}</span>`).join("")}
+          <span class="tag">${escapeHtml(candidate.region)}</span>
+        </div>
+      </article>
+    `).join("")
+    : `
+      <article class="empty-state">
+        <p class="eyebrow">No surge candidates</p>
+        <h3>Add targets and daily rows</h3>
+        <p class="summary">Target profiles define the search orbit. Daily rows are scored against target fit, velocity, engagement, repetition, source reliability, novelty, and catalog validation.</p>
+      </article>
+    `;
+  $("#surgeQueuePreview").textContent = state.targetDiscovery.reviewQueue
+    ? JSON.stringify(state.targetDiscovery.reviewQueue, null, 2)
+    : "No review queue generated yet.";
 }
 
 function currentReportText() {
@@ -1589,6 +1949,88 @@ function bindQuestionnaireForm() {
   });
 }
 
+function bindTargetDiscoveryForm() {
+  $("#sampleTargetsButton").addEventListener("click", () => {
+    $("#targetProfilesInput").value = JSON.stringify(targetProfileSample, null, 2);
+    $("#targetRowsInput").value = JSON.stringify(targetRowsSample, null, 2);
+    state.targetDiscovery.profiles = targetProfileSample.map(normalizeTargetProfile);
+    state.targetDiscovery.candidates = [];
+    state.targetDiscovery.reviewQueue = null;
+    $("#targetDiscoveryStatus").textContent = "Inserted sample target profile and daily rows. Replace with approved source data before review.";
+    renderTargetDiscovery();
+  });
+
+  $("#targetProfilesInput").addEventListener("input", () => {
+    try {
+      state.targetDiscovery.profiles = parseTargetProfiles($("#targetProfilesInput").value);
+      $("#targetDiscoveryStatus").textContent = `Loaded ${state.targetDiscovery.profiles.length} target profile(s).`;
+      renderTargetDiscovery();
+    } catch {
+      $("#targetDiscoveryStatus").textContent = "Target profile draft is not valid JSON yet.";
+    }
+  });
+
+  $("#copyTargetSchemaButton").addEventListener("click", async () => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        $("#targetDiscoveryStatus").textContent = "Copy is unavailable in this browser. Select the schema manually.";
+        return;
+      }
+      await navigator.clipboard.writeText(targetDiscoverySchema());
+      $("#targetDiscoveryStatus").textContent = "Copied target discovery schema.";
+    } catch (error) {
+      $("#targetDiscoveryStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#copyTargetPlanButton").addEventListener("click", async () => {
+    try {
+      const profiles = parseTargetProfiles($("#targetProfilesInput").value || JSON.stringify(targetProfileSample));
+      const plan = buildTargetQueryPlan(profiles);
+      if (!navigator.clipboard?.writeText) {
+        $("#targetDiscoveryStatus").textContent = "Copy is unavailable in this browser. Select the daily plan manually.";
+        return;
+      }
+      await navigator.clipboard.writeText(JSON.stringify(plan, null, 2));
+      $("#targetDiscoveryStatus").textContent = "Copied daily target query plan.";
+    } catch (error) {
+      $("#targetDiscoveryStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#copySurgeQueueButton").addEventListener("click", async () => {
+    try {
+      if (!state.targetDiscovery.reviewQueue) throw new Error("Score surge candidates first.");
+      if (!navigator.clipboard?.writeText) {
+        $("#targetDiscoveryStatus").textContent = "Copy is unavailable in this browser. Select the review queue manually.";
+        return;
+      }
+      await navigator.clipboard.writeText(JSON.stringify(state.targetDiscovery.reviewQueue, null, 2));
+      $("#targetDiscoveryStatus").textContent = "Copied human review queue.";
+    } catch (error) {
+      $("#targetDiscoveryStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#targetDiscoveryForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const profiles = parseTargetProfiles($("#targetProfilesInput").value);
+      const rows = parseDiscoveryRows($("#targetRowsInput").value);
+      if (!profiles.length) throw new Error("Add at least one target profile.");
+      if (!rows.length) throw new Error("Add at least one approved daily source row.");
+      const candidates = clusterTargetRows(rows, profiles);
+      state.targetDiscovery.profiles = profiles;
+      state.targetDiscovery.candidates = candidates;
+      state.targetDiscovery.reviewQueue = buildHumanReviewQueue(candidates, profiles);
+      $("#targetDiscoveryStatus").textContent = `Scored ${rows.length} row(s) into ${candidates.length} surge candidate(s).`;
+      renderTargetDiscovery();
+    } catch (error) {
+      $("#targetDiscoveryStatus").textContent = `Target discovery failed: ${error.message}`;
+    }
+  });
+}
+
 function bindDiscoveryForm() {
   $("#apiProviderInput").addEventListener("change", renderDiscoveryWorkbench);
   $("#discoveryObjectiveInput").addEventListener("input", renderDiscoveryWorkbench);
@@ -1677,6 +2119,7 @@ function renderAll() {
   renderStrategy();
   renderReport();
   renderQuestionnairePacket();
+  renderTargetDiscovery();
   renderDiscoveryWorkbench();
   renderGates();
 }
@@ -1685,6 +2128,7 @@ async function init() {
   const response = await fetch("./data/placeholder-artists.json", { cache: "no-store" });
   state.data = await response.json();
   state.defaultData = structuredClone(state.data);
+  state.dataSourceLabel = state.data.status === "private-browser-import" ? "Local import" : "Fixture dataset";
   state.activeArtistId = state.data.artists[0].id;
   renderModeControl();
   renderTabs();
@@ -1693,6 +2137,7 @@ async function init() {
   bindImportForm();
   bindExportActions();
   bindQuestionnaireForm();
+  bindTargetDiscoveryForm();
   bindDiscoveryForm();
   renderAll();
 }
