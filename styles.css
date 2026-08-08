@@ -748,7 +748,7 @@ body::before {
   content: "";
   background:
     linear-gradient(180deg, rgba(6, 8, 7, 0.08), rgba(6, 8, 7, 0.82)),
-    url("./assets/asi-signal-texture.png") center / cover no-repeat;
+    url("./assets/asi-signal-texture.png?v=20260808-label-refresh") center / cover no-repeat;
   opacity: 0.86;
 }
 
