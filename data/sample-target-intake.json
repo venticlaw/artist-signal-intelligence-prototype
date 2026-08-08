@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Northline Vale",
+    "priority": "high",
+    "genreLane": "Alternative hip-hop / rap",
+    "regions": "US, Mid-Atlantic, college towns, secondary markets",
+    "similarArtists": "Artist Alpha, Artist Beta, Artist Gamma, Artist Delta",
+    "sounds": "distorted drums, left-field rap, melodic rage, DIY videos, underground rap",
+    "hashtags": "altrap, undergroundrap, newartist, originalsound, raptok",
+    "exclude": "major-label established acts, non-artist creator accounts, fan pages, repost-only accounts, parody-only accounts",
+    "reviewGoal": "Find adjacent emerging artists with similar audience behavior, sound palette, or scene/community context."
+  },
+  {
+    "name": "Harbor Static",
+    "priority": "medium",
+    "genreLane": "Alt R&B / left-pop",
+    "regions": "US, coastal cities, college radio markets",
+    "similarArtists": "Artist Echo, Artist Foxtrot, Artist Indigo",
+    "sounds": "hazy vocal stacks, live bass, late-night R&B, intimate hooks",
+    "hashtags": "altrnb, leftrnb, bedroomrnb, unsignedartist, newmusic",
+    "exclude": "cover-only accounts, remix-only accounts, established major-label acts",
+    "reviewGoal": "Find early artists with repeatable short-form fan intent and a real catalog path."
+  }
+]

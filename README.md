@@ -18,6 +18,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Buyer requirements questionnaire with browser-local packet copy/download.
 - Target Discovery workbench for daily target-artist query plans, approved source rows, surge scoring, and human review queues.
 - TikTok Discovery Workbench for query planning, API adapter packet generation, approved/manual result-row clustering, and ASI private packet generation.
+- Local target profile builder for turning user-provided A&R target intake into normalized search profiles.
 - Local daily discovery packet generator for turning target profiles plus approved rows into daily query, cluster, queue, and summary JSON artifacts.
 - Strict private JSON import for manually reviewed public evidence.
 - Approval gate view for blocked actions.
@@ -45,11 +46,19 @@ Serve the repository root or this folder with a static file server and open `ind
 
 The local CLI creates the daily artifacts that make target-based discovery repeatable. It reads only local target profiles and approved/manual source rows.
 
+Build normalized target profiles from A&R target intake:
+
+```bash
+node tools/asi-build-target-profiles.mjs \
+  --input data/sample-target-intake.json \
+  --out /private/tmp/asi-built-target-profiles.json
+```
+
 Daily runner with automatic prior-state carry-forward:
 
 ```bash
 node tools/asi-run-daily.mjs \
-  --targets data/sample-target-profiles.json \
+  --targets /private/tmp/asi-built-target-profiles.json \
   --runs /private/tmp/asi-runner-runs \
   --date 2026-08-08
 ```
