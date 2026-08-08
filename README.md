@@ -69,11 +69,15 @@ node tools/asi-daily-discovery.mjs \
 Outputs:
 
 - `daily-query-plan.json`
+- `analyst-search-worksheet.csv`
+- `approved-source-row-template.csv`
 - `normalized-source-rows.json`
 - `candidate-clusters.json`
 - `human-review-queue.json`
 - `daily-summary.json`
 - `discovery-state.json`
+
+`analyst-search-worksheet.csv` gives A&R ops a prioritized daily checklist of target/search-orbit/query-seed tasks. `approved-source-row-template.csv` gives the capture columns that feed back into the scorer.
 
 `discovery-state.json` tracks first seen, last seen, run count, previous stats, deltas, and growth percentages so repeat daily runs can distinguish new, repeat, and rising candidates. The CLI does not call TikTok, scrape, authenticate, store credentials, or publish results.
 

@@ -127,6 +127,18 @@ function parseCsv(text) {
   return rows.slice(1).map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""])));
 }
 
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll("\"", "\"\"")}"` : text;
+}
+
+function toCsv(rows, headers) {
+  return [
+    headers.map(csvEscape).join(","),
+    ...rows.map((row) => headers.map((header) => csvEscape(row[header])).join(","))
+  ].join("\n") + "\n";
+}
+
 async function loadInput(path) {
   const text = await readFile(path, "utf8");
   if (path.toLowerCase().endsWith(".csv")) return parseCsv(text);
@@ -219,6 +231,80 @@ function buildTargetQueryPlan(profiles, runDate) {
       uses: "sound-use count when available"
     }
   };
+}
+
+function dedupeSeeds(seeds) {
+  const seen = new Set();
+  return seeds
+    .map((seed) => String(seed || "").trim())
+    .filter(Boolean)
+    .filter((seed) => {
+      const key = seed.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function seedPriority(profile, orbit, seed, index) {
+  const priorityBase = { high: 1, medium: 2, low: 3 }[profile.priority.toLowerCase()] || 2;
+  const orbitBase = {
+    "target-exact": 1,
+    "similar-artist": 2,
+    "genre-scene": 3,
+    "breakout-behavior": 4
+  }[orbit] || 5;
+  const seedBoost = profile.name.toLowerCase() === seed.toLowerCase() ? 0 : index;
+  return priorityBase * 100 + orbitBase * 10 + seedBoost;
+}
+
+function buildAnalystSearchWorksheet(queryPlan) {
+  return queryPlan.targets.flatMap((target) => {
+    const profilePriority = target.priority || "medium";
+    return target.querySets.flatMap((querySet) => {
+      const seeds = dedupeSeeds(querySet.seeds);
+      return seeds.map((seed, index) => ({
+        runDate: queryPlan.createdAt,
+        targetId: target.targetId,
+        targetName: target.name,
+        targetPriority: profilePriority,
+        queryOrbit: querySet.orbit,
+        querySeed: seed,
+        searchPriority: seedPriority({ name: target.name, priority: profilePriority }, querySet.orbit, seed, index),
+        approvedSourcePath: "manual-public-review-or-approved-provider",
+        analystStatus: "not-started",
+        rowsCaptured: "",
+        strongestCandidate: "",
+        notes: "",
+        policyReminder: "No scraping, login collection, outbound action, or public real-artist claims."
+      }));
+    });
+  }).sort((a, b) => a.searchPriority - b.searchPriority);
+}
+
+function buildApprovedSourceRowTemplate(runDate) {
+  return [
+    {
+      targetId: "",
+      queryOrbit: "",
+      querySeed: "",
+      handle: "",
+      displayName: "",
+      caption: "",
+      url: "",
+      sourcePlatform: "TikTok",
+      soundTitle: "",
+      hashtags: "",
+      region: "",
+      observedDate: runDate,
+      views: "",
+      likes: "",
+      comments: "",
+      shares: "",
+      saves: "",
+      uses: ""
+    }
+  ];
 }
 
 function tokenSet(items) {
@@ -482,7 +568,7 @@ function buildHumanReviewQueue(candidates, profiles, runDate) {
   };
 }
 
-function buildSummary(profiles, rows, candidates, runDate, statePath) {
+function buildSummary(profiles, rows, candidates, runDate, statePath, worksheetRows) {
   const shortlistCount = candidates.filter((candidate) => candidate.surge.decision === "Shortlist").length;
   const dailyReviewCount = candidates.filter((candidate) => candidate.surge.decision === "Daily review").length;
   const watchCount = candidates.filter((candidate) => candidate.surge.decision === "Watch").length;
@@ -496,6 +582,7 @@ function buildSummary(profiles, rows, candidates, runDate, statePath) {
     status: "daily-discovery-summary",
     createdAt: runDate,
     targetsSearched: profiles.length,
+    searchTasksGenerated: worksheetRows.length,
     rowsReceived: rows.length,
     candidatesClustered: candidates.length,
     newCandidateCount,
@@ -544,12 +631,57 @@ async function main() {
   if (!rows.length) throw new Error("At least one approved source row is required.");
 
   const queryPlan = buildTargetQueryPlan(profiles, args.date);
+  const worksheetRows = buildAnalystSearchWorksheet(queryPlan);
+  const rowTemplate = buildApprovedSourceRowTemplate(args.date);
   const clusters = clusterRows(rows, profiles, previousState, args.date);
   const reviewQueue = buildHumanReviewQueue(clusters, profiles, args.date);
   const nextState = buildNextState(clusters, previousState, args.date);
-  const summary = buildSummary(profiles, rows, clusters, args.date, stateOutPath);
+  const summary = buildSummary(profiles, rows, clusters, args.date, stateOutPath, worksheetRows);
 
   await writeJson(`${outputDir}/daily-query-plan.json`, queryPlan);
+  await writeFile(
+    `${outputDir}/analyst-search-worksheet.csv`,
+    toCsv(worksheetRows, [
+      "runDate",
+      "targetId",
+      "targetName",
+      "targetPriority",
+      "queryOrbit",
+      "querySeed",
+      "searchPriority",
+      "approvedSourcePath",
+      "analystStatus",
+      "rowsCaptured",
+      "strongestCandidate",
+      "notes",
+      "policyReminder"
+    ]),
+    "utf8"
+  );
+  await writeFile(
+    `${outputDir}/approved-source-row-template.csv`,
+    toCsv(rowTemplate, [
+      "targetId",
+      "queryOrbit",
+      "querySeed",
+      "handle",
+      "displayName",
+      "caption",
+      "url",
+      "sourcePlatform",
+      "soundTitle",
+      "hashtags",
+      "region",
+      "observedDate",
+      "views",
+      "likes",
+      "comments",
+      "shares",
+      "saves",
+      "uses"
+    ]),
+    "utf8"
+  );
   await writeJson(`${outputDir}/normalized-source-rows.json`, rows);
   await writeJson(`${outputDir}/candidate-clusters.json`, clusters);
   await writeJson(`${outputDir}/human-review-queue.json`, reviewQueue);
@@ -561,6 +693,7 @@ async function main() {
     outputDir,
     runDate: args.date,
     targetsSearched: summary.targetsSearched,
+    searchTasksGenerated: summary.searchTasksGenerated,
     rowsReceived: summary.rowsReceived,
     candidatesClustered: summary.candidatesClustered,
     newCandidateCount: summary.newCandidateCount,
