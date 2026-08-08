@@ -45,6 +45,28 @@ Serve the repository root or this folder with a static file server and open `ind
 
 The local CLI creates the daily artifacts that make target-based discovery repeatable. It reads only local target profiles and approved/manual source rows.
 
+Daily runner with automatic prior-state carry-forward:
+
+```bash
+node tools/asi-run-daily.mjs \
+  --targets data/sample-target-profiles.json \
+  --rows data/sample-daily-source-rows.json \
+  --runs /private/tmp/asi-runner-runs \
+  --date 2026-08-08
+```
+
+Follow-up daily runner:
+
+```bash
+node tools/asi-run-daily.mjs \
+  --targets data/sample-target-profiles.json \
+  --rows data/sample-daily-source-rows-day-2.json \
+  --runs /private/tmp/asi-runner-runs \
+  --date 2026-08-09
+```
+
+The daily runner writes to `<runs>/<date>/`, automatically uses `<runs>/<previous-date>/discovery-state.json` when present, and writes `<runs>/latest-run.json` for local handoff.
+
 First run:
 
 ```bash
