@@ -6,9 +6,10 @@ function usage() {
   return [
     "Usage:",
     "  node tools/asi-build-target-profiles.mjs --input data/sample-target-intake.json --out /tmp/target-profiles.json",
+    "  node tools/asi-build-target-profiles.mjs --input data/sample-target-intake.csv --out /tmp/target-profiles.json",
     "",
     "Inputs:",
-    "  --input JSON array or object with targets[] / profiles[]",
+    "  --input JSON array/object with targets[] / profiles[] or CSV with target columns",
     "  --out   Output JSON path for normalized target profiles",
     "",
     "This tool shapes user-provided target artists into ASI target profiles. It does not research, scrape, enrich, authenticate, or publish."
@@ -37,6 +38,49 @@ function asArray(value) {
   if (value && Array.isArray(value.targets)) return value.targets;
   if (value && Array.isArray(value.profiles)) return value.profiles;
   return null;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let field = "";
+  let row = [];
+  let quoted = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+    if (quoted && char === "\"" && next === "\"") {
+      field += "\"";
+      index += 1;
+    } else if (char === "\"") {
+      quoted = !quoted;
+    } else if (!quoted && char === ",") {
+      row.push(field);
+      field = "";
+    } else if (!quoted && (char === "\n" || char === "\r")) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(field);
+      if (row.some((cell) => cell.trim())) rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+  row.push(field);
+  if (row.some((cell) => cell.trim())) rows.push(row);
+  if (!rows.length) return [];
+  const headers = rows[0].map((header) => header.trim());
+  return rows.slice(1).map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""])));
+}
+
+async function loadInput(path) {
+  const text = await readFile(path, "utf8");
+  if (path.toLowerCase().endsWith(".csv")) return parseCsv(text);
+  const parsed = JSON.parse(text);
+  const inputTargets = asArray(parsed);
+  if (!inputTargets) throw new Error("--input must be a JSON array, object with targets[] / profiles[], or CSV.");
+  return inputTargets;
 }
 
 function splitList(value) {
@@ -101,9 +145,7 @@ async function main() {
 
   const inputPath = resolve(args.input);
   const outputPath = resolve(args.out);
-  const parsed = JSON.parse(await readFile(inputPath, "utf8"));
-  const inputTargets = asArray(parsed);
-  if (!inputTargets) throw new Error("--input must be a JSON array or object with targets[] / profiles[].");
+  const inputTargets = await loadInput(inputPath);
   const profiles = inputTargets.map(normalizeTarget);
   const output = {
     updated: new Date().toISOString().slice(0, 10),

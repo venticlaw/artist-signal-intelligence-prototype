@@ -19,6 +19,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Target Discovery workbench for daily target-artist query plans, approved source rows, surge scoring, and human review queues.
 - TikTok Discovery Workbench for query planning, API adapter packet generation, approved/manual result-row clustering, and ASI private packet generation.
 - Local target profile builder for turning user-provided A&R target intake into normalized search profiles.
+- Local source-row normalizer for turning approved TikTok/API/vendor/manual exports into the ASI daily row contract.
 - Local daily discovery packet generator for turning target profiles plus approved rows into daily query, cluster, queue, and summary JSON artifacts.
 - Strict private JSON import for manually reviewed public evidence.
 - Approval gate view for blocked actions.
@@ -35,6 +36,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Questionnaire packet copy/download runs only in the browser.
 - TikTok Discovery Workbench does not call TikTok, scrape, login-scrape, automate browser extraction, or store results; it only generates a server-side API adapter contract and processes pasted approved/manual rows in the browser.
 - Target Discovery does not run live collection; it turns pasted target profiles and approved daily source rows into a local review queue.
+- Source-row normalization reads local approved/manual exports only; it does not fetch TikTok, authenticate, scrape, enrich, or store credentials.
 - Any TikTok or licensed-provider API credentials must live in a private server-side connector, never in GitHub Pages, repo files, browser JavaScript, or static JSON.
 - Approval-gated actions are displayed as blocked actions, not active controls.
 
@@ -54,6 +56,25 @@ node tools/asi-build-target-profiles.mjs \
   --out /private/tmp/asi-built-target-profiles.json
 ```
 
+CSV intake is supported for spreadsheet handoffs:
+
+```bash
+node tools/asi-build-target-profiles.mjs \
+  --input data/sample-target-intake.csv \
+  --out /private/tmp/asi-built-target-profiles-csv.json
+```
+
+Normalize an approved TikTok/API/vendor/manual export into ASI source rows:
+
+```bash
+node tools/asi-normalize-source-rows.mjs \
+  --input data/sample-tiktok-approved-export.json \
+  --out /private/tmp/asi-normalized-source-rows.json \
+  --target-id northline-vale \
+  --query-orbit genre-scene \
+  --query-seed altrap
+```
+
 Daily runner with automatic prior-state carry-forward:
 
 ```bash
@@ -70,9 +91,9 @@ Scoring run after approved rows are captured:
 ```bash
 node tools/asi-run-daily.mjs \
   --targets data/sample-target-profiles.json \
-  --rows data/sample-daily-source-rows.json \
+  --rows /private/tmp/asi-normalized-source-rows.json \
   --runs /private/tmp/asi-runner-runs \
-  --date 2026-08-08
+  --date 2026-08-13
 ```
 
 Follow-up daily runner:

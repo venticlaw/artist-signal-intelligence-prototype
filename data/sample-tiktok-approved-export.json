@@ -1,0 +1,55 @@
+{
+  "sourceMeta": {
+    "provider": "fictional-approved-export",
+    "fetchedAt": "2026-08-13T09:00:00Z",
+    "approvalReference": "local-fictional-fixture-only",
+    "note": "Fictional TikTok-style rows for testing the ASI source-row normalizer. Not real artist data."
+  },
+  "data": [
+    {
+      "username": "daily_signal_a",
+      "nickname": "Daily Signal A",
+      "description": "new original sound from a regional underground rap artist #altrap #undergroundrap #newmusic",
+      "share_url": "https://www.tiktok.com/@daily_signal_a/video/0000000000000000101",
+      "platform": "TikTok",
+      "music_id": "fictional-music-101",
+      "hashtag_names": "altrap undergroundrap newmusic",
+      "region_code": "US",
+      "create_date": "20260813",
+      "view_count": "48200",
+      "like_count": "6200",
+      "comment_count": "380",
+      "share_count": "420"
+    },
+    {
+      "username": "daily_signal_a",
+      "nickname": "Daily Signal A",
+      "description": "fans asking for the full version after a distorted drum snippet #newartist #originalsound",
+      "share_url": "https://www.tiktok.com/@daily_signal_a/video/0000000000000000102",
+      "platform": "TikTok",
+      "music_id": "fictional-music-102",
+      "hashtag_names": "newartist originalsound",
+      "region_code": "US",
+      "create_date": "20260813",
+      "view_count": "21100",
+      "like_count": "2400",
+      "comment_count": "210",
+      "share_count": "160"
+    },
+    {
+      "username": "@daily_signal_c",
+      "nickname": "Daily Signal C",
+      "description": "left-field rap hook picked up by college-town creators #altrap #unsignedartist",
+      "share_url": "https://www.tiktok.com/@daily_signal_c/video/0000000000000000104",
+      "platform": "TikTok",
+      "music_id": "fictional-music-104",
+      "hashtag_names": "altrap unsignedartist",
+      "region_code": "US",
+      "create_date": "20260813",
+      "view_count": "19600",
+      "like_count": "2100",
+      "comment_count": "144",
+      "share_count": "98"
+    }
+  ]
+}
