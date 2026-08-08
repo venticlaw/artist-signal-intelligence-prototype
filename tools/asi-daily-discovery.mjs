@@ -14,6 +14,8 @@ function usage() {
     "  --rows     JSON array/object rows[] or CSV file using the ASI daily row contract",
     "  --out      Output folder for daily artifacts",
     "  --date     Optional YYYY-MM-DD run date, defaults to today",
+    "  --state    Optional previous discovery-state.json for new/repeat/delta scoring",
+    "  --state-out Optional state output path, defaults to <out>/discovery-state.json",
     "",
     "This tool normalizes approved/manual rows only. It does not call TikTok, scrape, authenticate, store credentials, or publish results."
   ].join("\n");
@@ -268,17 +270,93 @@ function scoreStats(rows) {
   }), { views: 0, likes: 0, comments: 0, shares: 0, saves: 0, uses: 0 });
 }
 
+function candidateKey(targetId, handle) {
+  return `${String(targetId || "unmapped").toLowerCase()}::${String(handle || "").toLowerCase()}`;
+}
+
+function emptyState() {
+  return {
+    status: "asi-discovery-run-state",
+    version: 1,
+    updatedAt: null,
+    candidates: {}
+  };
+}
+
+async function loadState(path) {
+  if (!path) return emptyState();
+  const parsed = JSON.parse(await readFile(path, "utf8"));
+  return {
+    ...emptyState(),
+    ...parsed,
+    candidates: parsed?.candidates && typeof parsed.candidates === "object" ? parsed.candidates : {}
+  };
+}
+
+function percentChange(current, previous) {
+  if (!previous && !current) return 0;
+  if (!previous) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function buildCandidateHistory(candidate, previousState, runDate) {
+  const stats = scoreStats(candidate.rows);
+  const key = candidateKey(candidate.targetId, candidate.handle);
+  const previous = previousState.candidates[key] || null;
+  const previousStats = previous?.lastStats || { views: 0, likes: 0, comments: 0, shares: 0, saves: 0, uses: 0 };
+  const deltas = {
+    views: stats.views - previousStats.views,
+    likes: stats.likes - previousStats.likes,
+    comments: stats.comments - previousStats.comments,
+    shares: stats.shares - previousStats.shares,
+    saves: stats.saves - previousStats.saves,
+    uses: stats.uses - previousStats.uses
+  };
+  return {
+    key,
+    isNewCandidate: !previous,
+    firstSeen: previous?.firstSeen || runDate,
+    lastSeen: runDate,
+    previousSeen: previous?.lastSeen || null,
+    runCount: (previous?.runCount || 0) + 1,
+    previousStats,
+    currentStats: stats,
+    deltas,
+    growthPct: {
+      views: percentChange(stats.views, previousStats.views),
+      likes: percentChange(stats.likes, previousStats.likes),
+      comments: percentChange(stats.comments, previousStats.comments),
+      shares: percentChange(stats.shares, previousStats.shares),
+      saves: percentChange(stats.saves, previousStats.saves),
+      uses: percentChange(stats.uses, previousStats.uses)
+    }
+  };
+}
+
 function scoreSurgeCandidate(candidate, profiles) {
   const rows = candidate.rows;
   const profile = profiles.find((item) => item.targetId === candidate.targetId) || profiles[0];
   const stats = scoreStats(rows);
   const targetFit = profile ? Math.max(...rows.map((row) => scoreTargetFit(row, profile))) : 0;
   const engagementRate = stats.views ? (stats.likes + stats.comments + stats.shares + stats.saves) / stats.views : 0;
-  const velocity = clampScore(Math.round(Math.log10(Math.max(1, stats.views)) * 6), 20);
+  const absoluteVelocity = clampScore(Math.round(Math.log10(Math.max(1, stats.views)) * 5), 14);
+  const history = candidate.history;
+  const deltaVelocity = history
+    ? clampScore(
+      (history.isNewCandidate ? 6 : 0) +
+      Math.round(Math.log10(Math.max(1, Math.max(0, history.deltas.views))) * 3) +
+      (history.growthPct.views >= 75 ? 5 : history.growthPct.views >= 30 ? 3 : history.growthPct.views > 0 ? 1 : 0),
+      20
+    )
+    : 0;
+  const velocity = clampScore(Math.max(absoluteVelocity, deltaVelocity), 20);
   const engagementQuality = clampScore(Math.round(engagementRate * 170) + (stats.comments >= 100 ? 3 : 0) + (stats.shares >= 100 ? 3 : 0), 15);
   const repeatSignal = clampScore((rows.length > 1 ? 8 : 0) + Math.min(7, (candidate.sounds.length + candidate.tags.length)), 15);
   const sourceReliability = clampScore(rows.filter((row) => row.url).length * 4 + rows.filter((row) => row.querySeed).length * 2, 10);
-  const novelty = clampScore(candidate.handle.toLowerCase().includes(profile?.name.toLowerCase() || "") ? 2 : 8, 10);
+  const novelty = clampScore(
+    candidate.handle.toLowerCase().includes(profile?.name.toLowerCase() || "") ? 2 : history?.isNewCandidate ? 10 : 6,
+    10
+  );
   const catalogValidation = clampScore(rowText(rows[0]).includes("artist") || rowText(rows[0]).includes("music") || rowText(rows[0]).includes("song") ? 7 : 3, 10);
   const score = targetFit + velocity + engagementQuality + repeatSignal + sourceReliability + novelty + catalogValidation;
   const decision = score >= 75 ? "Shortlist" : score >= 55 ? "Daily review" : score >= 35 ? "Watch" : "Ignore";
@@ -298,7 +376,7 @@ function scoreSurgeCandidate(candidate, profiles) {
   };
 }
 
-function clusterRows(rows, profiles) {
+function clusterRows(rows, profiles, previousState, runDate) {
   const grouped = new Map();
   rows.forEach((row) => {
     const targetId = row.targetId || profiles[0]?.targetId || "unmapped";
@@ -323,8 +401,37 @@ function clusterRows(rows, profiles) {
       region: first.region || "Unknown",
       observedDate: first.observedDate
     };
-    return { ...candidate, surge: scoreSurgeCandidate(candidate, profiles) };
+    const history = buildCandidateHistory(candidate, previousState, runDate);
+    const enrichedCandidate = { ...candidate, history };
+    return { ...enrichedCandidate, surge: scoreSurgeCandidate(enrichedCandidate, profiles) };
   }).sort((a, b) => b.surge.score - a.surge.score);
+}
+
+function buildNextState(candidates, previousState, runDate) {
+  const nextState = {
+    ...emptyState(),
+    updatedAt: runDate,
+    candidates: { ...previousState.candidates }
+  };
+  candidates.forEach((candidate) => {
+    const previous = previousState.candidates[candidate.history.key] || {};
+    nextState.candidates[candidate.history.key] = {
+      targetId: candidate.targetId,
+      handle: candidate.handle,
+      displayName: candidate.displayName,
+      firstSeen: candidate.history.firstSeen,
+      lastSeen: runDate,
+      runCount: candidate.history.runCount,
+      lastStats: candidate.history.currentStats,
+      previousStats: candidate.history.previousStats,
+      bestScore: Math.max(previous.bestScore || 0, candidate.surge.score),
+      lastScore: candidate.surge.score,
+      lastDecision: candidate.surge.decision,
+      lastQuerySeeds: candidate.querySeeds,
+      lastQueryOrbits: candidate.queryOrbits
+    };
+  });
+  return nextState;
 }
 
 function buildHumanReviewQueue(candidates, profiles, runDate) {
@@ -343,6 +450,14 @@ function buildHumanReviewQueue(candidates, profiles, runDate) {
         decision: candidate.surge.decision,
         dimensions: candidate.surge.dimensions,
         querySeeds: candidate.querySeeds,
+        history: {
+          isNewCandidate: candidate.history.isNewCandidate,
+          firstSeen: candidate.history.firstSeen,
+          previousSeen: candidate.history.previousSeen,
+          runCount: candidate.history.runCount,
+          deltas: candidate.history.deltas,
+          growthPct: candidate.history.growthPct
+        },
         strongestSignal: `${candidate.rows.length} row(s), ${candidate.surge.stats.views} visible views, ${candidate.surge.stats.comments} comments, ${candidate.surge.stats.shares} shares.`,
         reviewFields: {
           isArtistAccount: "uncertain",
@@ -367,11 +482,14 @@ function buildHumanReviewQueue(candidates, profiles, runDate) {
   };
 }
 
-function buildSummary(profiles, rows, candidates, runDate) {
+function buildSummary(profiles, rows, candidates, runDate, statePath) {
   const shortlistCount = candidates.filter((candidate) => candidate.surge.decision === "Shortlist").length;
   const dailyReviewCount = candidates.filter((candidate) => candidate.surge.decision === "Daily review").length;
   const watchCount = candidates.filter((candidate) => candidate.surge.decision === "Watch").length;
   const ignoreCount = candidates.filter((candidate) => candidate.surge.decision === "Ignore").length;
+  const newCandidateCount = candidates.filter((candidate) => candidate.history.isNewCandidate).length;
+  const repeatCandidateCount = candidates.filter((candidate) => !candidate.history.isNewCandidate).length;
+  const risingCandidateCount = candidates.filter((candidate) => candidate.history.deltas.views > 0 || candidate.history.deltas.comments > 0 || candidate.history.deltas.shares > 0).length;
   const rowsWithMissingQuery = rows.filter((row) => !row.querySeed || !row.queryOrbit).length;
   const rowsWithMissingTarget = rows.filter((row) => !row.targetId).length;
   return {
@@ -380,12 +498,16 @@ function buildSummary(profiles, rows, candidates, runDate) {
     targetsSearched: profiles.length,
     rowsReceived: rows.length,
     candidatesClustered: candidates.length,
+    newCandidateCount,
+    repeatCandidateCount,
+    risingCandidateCount,
     shortlistCount,
     dailyReviewCount,
     watchCount,
     ignoreCount,
     topMissingSource: rowsWithMissingTarget ? "targetId" : rowsWithMissingQuery ? "querySeed/queryOrbit" : "none",
     connectorFailures: [],
+    statePath,
     approvalState: {
       liveCollection: "not-approved",
       publicRealArtistClaims: "not-approved",
@@ -414,21 +536,25 @@ async function main() {
   const targetsPath = resolve(args.targets);
   const rowsPath = resolve(args.rows);
   const outputDir = resolve(args.out);
+  const previousState = await loadState(args.state ? resolve(args.state) : null);
+  const stateOutPath = resolve(args["state-out"] || `${outputDir}/discovery-state.json`);
   const profiles = (await loadInput(targetsPath)).map(normalizeTargetProfile);
   const rows = (await loadInput(rowsPath)).map((row, index) => normalizeDiscoveryRow(row, index, args.date));
   if (!profiles.length) throw new Error("At least one target profile is required.");
   if (!rows.length) throw new Error("At least one approved source row is required.");
 
   const queryPlan = buildTargetQueryPlan(profiles, args.date);
-  const clusters = clusterRows(rows, profiles);
+  const clusters = clusterRows(rows, profiles, previousState, args.date);
   const reviewQueue = buildHumanReviewQueue(clusters, profiles, args.date);
-  const summary = buildSummary(profiles, rows, clusters, args.date);
+  const nextState = buildNextState(clusters, previousState, args.date);
+  const summary = buildSummary(profiles, rows, clusters, args.date, stateOutPath);
 
   await writeJson(`${outputDir}/daily-query-plan.json`, queryPlan);
   await writeJson(`${outputDir}/normalized-source-rows.json`, rows);
   await writeJson(`${outputDir}/candidate-clusters.json`, clusters);
   await writeJson(`${outputDir}/human-review-queue.json`, reviewQueue);
   await writeJson(`${outputDir}/daily-summary.json`, summary);
+  await writeJson(stateOutPath, nextState);
 
   console.log(JSON.stringify({
     status: "ok",
@@ -437,6 +563,9 @@ async function main() {
     targetsSearched: summary.targetsSearched,
     rowsReceived: summary.rowsReceived,
     candidatesClustered: summary.candidatesClustered,
+    newCandidateCount: summary.newCandidateCount,
+    repeatCandidateCount: summary.repeatCandidateCount,
+    risingCandidateCount: summary.risingCandidateCount,
     shortlistCount: summary.shortlistCount,
     dailyReviewCount: summary.dailyReviewCount,
     watchCount: summary.watchCount

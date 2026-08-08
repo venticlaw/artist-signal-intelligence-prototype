@@ -45,12 +45,25 @@ Serve the repository root or this folder with a static file server and open `ind
 
 The local CLI creates the daily artifacts that make target-based discovery repeatable. It reads only local target profiles and approved/manual source rows.
 
+First run:
+
 ```bash
 node tools/asi-daily-discovery.mjs \
   --targets data/sample-target-profiles.json \
   --rows data/sample-daily-source-rows.json \
   --out /private/tmp/asi-daily-discovery-sample \
   --date 2026-08-08
+```
+
+Follow-up run with yesterday's state:
+
+```bash
+node tools/asi-daily-discovery.mjs \
+  --targets data/sample-target-profiles.json \
+  --rows data/sample-daily-source-rows-day-2.json \
+  --state /private/tmp/asi-daily-discovery-sample/discovery-state.json \
+  --out /private/tmp/asi-daily-discovery-day-2 \
+  --date 2026-08-09
 ```
 
 Outputs:
@@ -60,8 +73,9 @@ Outputs:
 - `candidate-clusters.json`
 - `human-review-queue.json`
 - `daily-summary.json`
+- `discovery-state.json`
 
-The CLI does not call TikTok, scrape, authenticate, store credentials, or publish results.
+`discovery-state.json` tracks first seen, last seen, run count, previous stats, deltas, and growth percentages so repeat daily runs can distinguish new, repeat, and rising candidates. The CLI does not call TikTok, scrape, authenticate, store credentials, or publish results.
 
 ## Source Of Truth
 
