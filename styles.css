@@ -1124,7 +1124,9 @@ footer {
 }
 
 @media (max-width: 1000px) {
-  .filter-bar {
+  .filter-bar,
+  .timeline-layout,
+  .learning-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -1138,7 +1140,9 @@ footer {
     min-height: 184px;
   }
 
-  .filter-bar {
+  .filter-bar,
+  .timeline-layout,
+  .learning-grid {
     grid-template-columns: 1fr;
   }
 }
