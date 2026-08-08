@@ -21,6 +21,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Local target profile builder for turning user-provided A&R target intake into normalized search profiles.
 - Local source-row normalizer for turning approved TikTok/API/vendor/manual exports into the ASI daily row contract.
 - Local daily discovery packet generator for turning target profiles plus approved rows into daily query, cluster, queue, and summary JSON artifacts.
+- Local review-queue converter for turning human-approved candidates into private dashboard import packets.
 - Strict private JSON import for manually reviewed public evidence.
 - Approval gate view for blocked actions.
 
@@ -37,6 +38,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - TikTok Discovery Workbench does not call TikTok, scrape, login-scrape, automate browser extraction, or store results; it only generates a server-side API adapter contract and processes pasted approved/manual rows in the browser.
 - Target Discovery does not run live collection; it turns pasted target profiles and approved daily source rows into a local review queue.
 - Source-row normalization reads local approved/manual exports only; it does not fetch TikTok, authenticate, scrape, enrich, or store credentials.
+- Review-queue conversion promotes only human-approved local candidates and keeps output as `publicationApproval: not-approved`.
 - Any TikTok or licensed-provider API credentials must live in a private server-side connector, never in GitHub Pages, repo files, browser JavaScript, or static JSON.
 - Approval-gated actions are displayed as blocked actions, not active controls.
 
@@ -94,6 +96,16 @@ node tools/asi-run-daily.mjs \
   --rows /private/tmp/asi-normalized-source-rows.json \
   --runs /private/tmp/asi-runner-runs \
   --date 2026-08-13
+```
+
+After human review, convert approved candidates into a private dashboard import packet:
+
+```bash
+node tools/asi-review-queue-to-private-import.mjs \
+  --input data/sample-human-reviewed-queue.json \
+  --out /private/tmp/asi-private-import-from-reviewed-queue.json \
+  --analyst ASI \
+  --created-at 2026-08-13
 ```
 
 Follow-up daily runner:

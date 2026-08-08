@@ -1,0 +1,136 @@
+{
+  "status": "human-review-queue",
+  "createdAt": "2026-08-13",
+  "reviewRule": "Human reviewer must validate artist identity, catalog, source confidence, duplicate status, and target-fit reason before dashboard import.",
+  "candidates": [
+    {
+      "targetId": "northline-vale",
+      "targetName": "Northline Vale",
+      "handle": "@daily_signal_a",
+      "displayName": "Daily Signal A",
+      "surgeScore": 97,
+      "decision": "Shortlist",
+      "dimensions": {
+        "targetFit": 20,
+        "velocity": 20,
+        "engagementQuality": 15,
+        "repeatSignal": 15,
+        "sourceReliability": 10,
+        "novelty": 10,
+        "catalogValidation": 7
+      },
+      "querySeeds": ["altrap"],
+      "history": {
+        "isNewCandidate": true,
+        "firstSeen": "2026-08-13",
+        "previousSeen": null,
+        "runCount": 1,
+        "deltas": {
+          "views": 69300,
+          "likes": 8600,
+          "comments": 590,
+          "shares": 580,
+          "saves": 0,
+          "uses": 0
+        },
+        "growthPct": {
+          "views": 100,
+          "likes": 100,
+          "comments": 100,
+          "shares": 100,
+          "saves": 0,
+          "uses": 0
+        }
+      },
+      "strongestSignal": "Two approved public short-form rows showed repeated use of the same fictional music context and visible fan intent.",
+      "reviewFields": {
+        "isArtistAccount": "yes",
+        "catalogFound": "yes",
+        "targetFitReason": "Matches the target orbit through alt-rap language, original-sound behavior, and repeat fan-intent comments.",
+        "weakestSignal": "Catalog depth and off-platform audience quality still need a second public-source confirmation.",
+        "duplicateOf": "",
+        "reviewDecision": "Shortlist",
+        "passReason": "",
+        "sourceConfidence": "Medium",
+        "nextValidationStep": "Confirm official catalog identity and compare repeat short-form activity across the next daily run."
+      },
+      "sourceRows": [
+        {
+          "url": "https://www.tiktok.com/@daily_signal_a/video/0000000000000000101",
+          "caption": "new original sound from a regional underground rap artist #altrap #undergroundrap #newmusic",
+          "observedDate": "2026-08-13",
+          "queryOrbit": "genre-scene",
+          "querySeed": "altrap"
+        },
+        {
+          "url": "https://www.tiktok.com/@daily_signal_a/video/0000000000000000102",
+          "caption": "fans asking for the full version after a distorted drum snippet #newartist #originalsound",
+          "observedDate": "2026-08-13",
+          "queryOrbit": "genre-scene",
+          "querySeed": "altrap"
+        }
+      ]
+    },
+    {
+      "targetId": "northline-vale",
+      "targetName": "Northline Vale",
+      "handle": "@daily_signal_c",
+      "displayName": "Daily Signal C",
+      "surgeScore": 81,
+      "decision": "Shortlist",
+      "dimensions": {
+        "targetFit": 20,
+        "velocity": 20,
+        "engagementQuality": 15,
+        "repeatSignal": 3,
+        "sourceReliability": 6,
+        "novelty": 10,
+        "catalogValidation": 7
+      },
+      "querySeeds": ["altrap"],
+      "history": {
+        "isNewCandidate": true,
+        "firstSeen": "2026-08-13",
+        "previousSeen": null,
+        "runCount": 1,
+        "deltas": {
+          "views": 19600,
+          "likes": 2100,
+          "comments": 144,
+          "shares": 98,
+          "saves": 0,
+          "uses": 0
+        },
+        "growthPct": {
+          "views": 100,
+          "likes": 100,
+          "comments": 100,
+          "shares": 100,
+          "saves": 0,
+          "uses": 0
+        }
+      },
+      "strongestSignal": "One approved public source row showed visible early engagement.",
+      "reviewFields": {
+        "isArtistAccount": "uncertain",
+        "catalogFound": "uncertain",
+        "targetFitReason": "pending human review",
+        "weakestSignal": "pending human review",
+        "duplicateOf": "",
+        "reviewDecision": "Shortlist",
+        "passReason": "",
+        "sourceConfidence": "Low",
+        "nextValidationStep": "Confirm whether this is an artist account before import."
+      },
+      "sourceRows": [
+        {
+          "url": "https://www.tiktok.com/@daily_signal_c/video/0000000000000000104",
+          "caption": "left-field rap hook picked up by college-town creators #altrap #unsignedartist",
+          "observedDate": "2026-08-13",
+          "queryOrbit": "genre-scene",
+          "querySeed": "altrap"
+        }
+      ]
+    }
+  ]
+}
