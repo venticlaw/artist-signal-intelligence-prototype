@@ -70,6 +70,33 @@ const importTemplate = {
       strategy: "State the lowest-risk next validation step.",
       disconfirmingEvidence: "State what would prove this recommendation wrong.",
       risks: ["Unknowns remain unresolved"],
+      developments: [
+        {
+          date: "YYYY-MM-DD",
+          type: "Public development",
+          detail: "Publicly observed artist development.",
+          sourceUrl: "https://public-source-url.example/path",
+          confidence: "Low",
+          buyerRelevance: "Why this matters for the selected buyer lens.",
+          scoreImpact: "Which score dimension this should affect."
+        }
+      ],
+      relationships: [
+        {
+          type: "Collaborator / scene / venue / curator / brand context",
+          name: "PUBLIC RELATIONSHIP CONTEXT",
+          evidence: "Public evidence supporting this relationship edge.",
+          sourceUrl: "https://public-source-url.example/path",
+          confidence: "Low",
+          scoreUse: "Context only until reviewed"
+        }
+      ],
+      feedbackLearning: {
+        expectedPassReason: "Weak evidence",
+        missingContext: "What an A&R reviewer may need before trusting this recommendation.",
+        misleadingSignalRisk: "Which signal might be overweighted.",
+        suggestedModelAdjustment: "Proposed scoring or taxonomy change. Human approval required before use."
+      },
       signals: [
         {
           category: "Public social velocity",
@@ -123,6 +150,21 @@ function sourceLink(signal) {
   }
   const url = escapeHtml(signal.sourceUrl);
   return `<a class="source-link" href="${url}" target="_blank" rel="noopener noreferrer">Open source</a>`;
+}
+
+function externalSourceLink(url) {
+  if (!url || url === "Unknown") return '<span class="tag warning">Source URL unknown</span>';
+  const escapedUrl = escapeHtml(url);
+  return `<a class="source-link" href="${escapedUrl}" target="_blank" rel="noopener noreferrer">Open source</a>`;
+}
+
+function currentSavedNote() {
+  const artist = getArtist();
+  try {
+    return JSON.parse(localStorage.getItem(`asi-note-${artist.id}`) || "null");
+  } catch {
+    return null;
+  }
 }
 
 function getMode() {
@@ -330,6 +372,62 @@ function renderBrief() {
   `;
 }
 
+function renderTimeline() {
+  const artist = getArtist();
+  const developments = artist.developments || [];
+  const relationships = artist.relationships || [];
+
+  $("#timelineList").innerHTML = developments.length
+    ? developments.map((item) => `
+      <article class="timeline-item">
+        <div class="timeline-marker" aria-hidden="true"></div>
+        <div>
+          <div class="card-topline">
+            <div>
+              <p class="eyebrow">${escapeHtml(item.type || "Public development")}</p>
+              <h3>${escapeHtml(item.date || "Unknown date")}</h3>
+            </div>
+            <span class="tag">${escapeHtml(validConfidence(item.confidence))}</span>
+          </div>
+          <p>${escapeHtml(item.detail || "No development detail supplied.")}</p>
+          <div class="tag-row">
+            <span class="tag">${escapeHtml(item.buyerRelevance || "Buyer relevance unknown")}</span>
+            <span class="tag">${escapeHtml(item.scoreImpact || "Score impact pending")}</span>
+            ${externalSourceLink(item.sourceUrl)}
+          </div>
+        </div>
+      </article>
+    `).join("")
+    : `
+      <article class="detail-panel empty-state">
+        <p class="eyebrow">No timeline items</p>
+        <h3>Development history pending</h3>
+        <p class="summary">Private packets can add granular public developments with source URLs, confidence, and score impact.</p>
+      </article>
+    `;
+
+  $("#networkPanel").innerHTML = `
+    <h3>Community / network edges</h3>
+    ${relationships.length
+      ? `<div class="network-list">${relationships.map((edge) => `
+        <article class="network-edge">
+          <p class="eyebrow">${escapeHtml(edge.type || "Relationship context")}</p>
+          <h3>${escapeHtml(edge.name || "Unnamed context")}</h3>
+          <p>${escapeHtml(edge.evidence || "No relationship evidence supplied.")}</p>
+          <div class="tag-row">
+            <span class="tag">${escapeHtml(validConfidence(edge.confidence))}</span>
+            <span class="tag">${escapeHtml(edge.scoreUse || "Context only")}</span>
+            ${externalSourceLink(edge.sourceUrl)}
+          </div>
+        </article>
+      `).join("")}</div>`
+      : `<p class="summary">No relationship edges supplied. Add only public, evidence-backed collaborators, venues, scene context, curator context, or brand/music context.</p>`
+    }
+    <h3>Relationship guardrail</h3>
+    <p class="summary">Do not infer private management, label interest, deal terms, revenue, personal demographics, or private relationships.</p>
+  `;
+}
+
 function renderEvidence() {
   const artist = getArtist();
   $("#evidenceList").innerHTML = artist.signals
@@ -441,12 +539,7 @@ function renderNotes() {
     .join("");
 
   const artist = getArtist();
-  let saved = null;
-  try {
-    saved = JSON.parse(localStorage.getItem(`asi-note-${artist.id}`) || "null");
-  } catch {
-    saved = null;
-  }
+  const saved = currentSavedNote();
   $("#savedNote").innerHTML = saved
     ? `
       <p class="eyebrow">Browser-local note</p>
@@ -462,6 +555,46 @@ function renderNotes() {
     `;
 }
 
+function renderLearning() {
+  const artist = getArtist();
+  const saved = currentSavedNote();
+  const learning = artist.feedbackLearning || {};
+  const selectedReason = saved?.reason || learning.expectedPassReason || "No reviewer reason saved yet";
+  const selectedDecision = saved?.decision || "No saved decision";
+  const reviewerNote = saved?.note || "No human learning note saved for this artist yet.";
+  const proposedAdjustment = learning.suggestedModelAdjustment || "No model adjustment proposed until reviewer feedback accumulates.";
+
+  $("#learningPanel").innerHTML = `
+    <h3>Human review state</h3>
+    <div class="stat-grid two-col">
+      <div class="stat"><span class="mini-label">Decision</span><strong>${escapeHtml(selectedDecision)}</strong></div>
+      <div class="stat"><span class="mini-label">Reason</span><strong>${escapeHtml(selectedReason)}</strong></div>
+    </div>
+    <h3>Reviewer learning note</h3>
+    <p>${escapeHtml(reviewerNote)}</p>
+    <h3>What the system should learn</h3>
+    <ul class="check-list">
+      <li>Missing context: ${escapeHtml(learning.missingContext || "Not specified.")}</li>
+      <li>Misleading signal risk: ${escapeHtml(learning.misleadingSignalRisk || "Not specified.")}</li>
+      <li>Proposed model adjustment: ${escapeHtml(proposedAdjustment)}</li>
+    </ul>
+  `;
+
+  $("#feedbackPanel").innerHTML = `
+    <h3>Learning guardrails</h3>
+    <ul class="check-list">
+      <li>Feedback proposes changes only.</li>
+      <li>No automatic model-weight updates.</li>
+      <li>No sensitive demographic inference.</li>
+      <li>No private relationship assumptions.</li>
+      <li>No unsupported reputation claims.</li>
+      <li>Josh or an approved reviewer validates scoring changes before use.</li>
+    </ul>
+    <h3>Review cadence</h3>
+    <p class="summary">Review recurring pass reasons after 25 artist reviews or once per week, whichever comes first.</p>
+  `;
+}
+
 function bindNotesForm() {
   $("#notesForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -475,6 +608,7 @@ function bindNotesForm() {
     localStorage.setItem(`asi-note-${artist.id}`, JSON.stringify(note));
     $("#noteInput").value = "";
     renderNotes();
+    renderLearning();
   });
 }
 
@@ -507,6 +641,16 @@ function renderReport() {
     `Scene/community context:`,
     artist.scene,
     ``,
+    `Granular developments:`,
+    ...(artist.developments?.length
+      ? artist.developments.map((item) => `- ${item.date}: ${item.detail} (${item.confidence}). Source: ${item.sourceUrl || "Unknown"}`)
+      : [`- No timeline developments supplied.`]),
+    ``,
+    `Relationship / network context:`,
+    ...(artist.relationships?.length
+      ? artist.relationships.map((edge) => `- ${edge.type}: ${edge.name}. ${edge.evidence} (${edge.confidence}; ${edge.scoreUse || "Context only"}). Source: ${edge.sourceUrl || "Unknown"}`)
+      : [`- No relationship edges supplied.`]),
+    ``,
     `Top signals:`,
     ...artist.signals.map((signal) => {
       const source = signal.sourceUrl && signal.sourceUrl !== "Unknown" ? ` Source: ${signal.sourceUrl}` : " Source: Unknown";
@@ -522,6 +666,12 @@ function renderReport() {
     ``,
     `Disconfirming evidence:`,
     artist.disconfirmingEvidence,
+    ``,
+    `Human feedback / model learning:`,
+    `- Expected pass reason: ${artist.feedbackLearning?.expectedPassReason || "Not specified"}`,
+    `- Missing context: ${artist.feedbackLearning?.missingContext || "Not specified"}`,
+    `- Misleading signal risk: ${artist.feedbackLearning?.misleadingSignalRisk || "Not specified"}`,
+    `- Suggested model adjustment: ${artist.feedbackLearning?.suggestedModelAdjustment || "No automatic change. Human approval required."}`,
     ``,
     `Approval note: This preview is not a public artist ranking or a real artist claim.`
   ].join("\n");
@@ -680,6 +830,82 @@ function normalizeSignal(rawSignal, signalIndex, artistName) {
   return { category, label, freshness, confidence, detail, observedDate, sourceUrl };
 }
 
+function normalizeDevelopment(rawDevelopment, index, artistName) {
+  if (!rawDevelopment || typeof rawDevelopment !== "object") {
+    throw new Error(`${artistName} development ${index + 1} is not an object.`);
+  }
+  const date = String(rawDevelopment.date || "").trim();
+  const type = String(rawDevelopment.type || "").trim();
+  const detail = String(rawDevelopment.detail || "").trim();
+  const sourceUrl = String(rawDevelopment.sourceUrl || "").trim();
+  const confidence = String(rawDevelopment.confidence || "").trim();
+  const buyerRelevance = String(rawDevelopment.buyerRelevance || "").trim();
+  const scoreImpact = String(rawDevelopment.scoreImpact || "").trim();
+
+  if (!validDateOrUnknown(date)) {
+    throw new Error(`${artistName} development ${index + 1} needs date as YYYY-MM-DD or Unknown.`);
+  }
+  if (!type) throw new Error(`${artistName} development ${index + 1} is missing type.`);
+  if (detail.length < 12) throw new Error(`${artistName} development ${index + 1} needs a specific detail.`);
+  if (!validEvidenceUrl(sourceUrl, sourceUrl === "Unknown" ? "Unknown" : "Observed")) {
+    throw new Error(`${artistName} development ${index + 1} needs an https sourceUrl or Unknown.`);
+  }
+  if (!confidenceLabels.includes(confidence)) {
+    throw new Error(`${artistName} development ${index + 1} needs a valid confidence label.`);
+  }
+
+  return {
+    date,
+    type,
+    detail,
+    sourceUrl,
+    confidence,
+    buyerRelevance: buyerRelevance || "Buyer relevance pending",
+    scoreImpact: scoreImpact || "Score impact pending"
+  };
+}
+
+function normalizeRelationship(rawRelationship, index, artistName) {
+  if (!rawRelationship || typeof rawRelationship !== "object") {
+    throw new Error(`${artistName} relationship ${index + 1} is not an object.`);
+  }
+  const type = String(rawRelationship.type || "").trim();
+  const name = String(rawRelationship.name || "").trim();
+  const evidence = String(rawRelationship.evidence || "").trim();
+  const sourceUrl = String(rawRelationship.sourceUrl || "").trim();
+  const confidence = String(rawRelationship.confidence || "").trim();
+  const scoreUse = String(rawRelationship.scoreUse || "").trim();
+
+  if (!type) throw new Error(`${artistName} relationship ${index + 1} is missing type.`);
+  if (!name) throw new Error(`${artistName} relationship ${index + 1} is missing name.`);
+  if (evidence.length < 12) throw new Error(`${artistName} relationship ${index + 1} needs public evidence detail.`);
+  if (!validEvidenceUrl(sourceUrl, sourceUrl === "Unknown" ? "Unknown" : "Observed")) {
+    throw new Error(`${artistName} relationship ${index + 1} needs an https sourceUrl or Unknown.`);
+  }
+  if (!confidenceLabels.includes(confidence)) {
+    throw new Error(`${artistName} relationship ${index + 1} needs a valid confidence label.`);
+  }
+
+  return {
+    type,
+    name,
+    evidence,
+    sourceUrl,
+    confidence,
+    scoreUse: scoreUse || "Context only"
+  };
+}
+
+function normalizeFeedbackLearning(rawFeedback = {}) {
+  if (!rawFeedback || typeof rawFeedback !== "object") return {};
+  return {
+    expectedPassReason: String(rawFeedback.expectedPassReason || ""),
+    missingContext: String(rawFeedback.missingContext || ""),
+    misleadingSignalRisk: String(rawFeedback.misleadingSignalRisk || ""),
+    suggestedModelAdjustment: String(rawFeedback.suggestedModelAdjustment || "")
+  };
+}
+
 function normalizeArtist(rawArtist, index) {
   if (!rawArtist || typeof rawArtist !== "object") {
     throw new Error(`Artist ${index + 1} is not an object.`);
@@ -717,6 +943,13 @@ function normalizeArtist(rawArtist, index) {
     throw new Error(`${name} needs at least one source-separated signal.`);
   }
 
+  const developments = Array.isArray(rawArtist.developments)
+    ? rawArtist.developments.map((item, itemIndex) => normalizeDevelopment(item, itemIndex, name))
+    : [];
+  const relationships = Array.isArray(rawArtist.relationships)
+    ? rawArtist.relationships.map((edge, edgeIndex) => normalizeRelationship(edge, edgeIndex, name))
+    : [];
+
   return {
     id: String(rawArtist.id || `private-review-${index + 1}`),
     name,
@@ -731,6 +964,9 @@ function normalizeArtist(rawArtist, index) {
     risks: Array.isArray(rawArtist.risks) && rawArtist.risks.length
       ? rawArtist.risks.map((risk) => String(risk))
       : ["Unknowns remain unresolved"],
+    developments,
+    relationships,
+    feedbackLearning: normalizeFeedbackLearning(rawArtist.feedbackLearning),
     signals
   };
 }
@@ -865,10 +1101,12 @@ function renderAll() {
   $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
   renderWatchlist();
   renderBrief();
+  renderTimeline();
   renderEvidence();
   renderScoring();
   renderCompare();
   renderNotes();
+  renderLearning();
   renderStrategy();
   renderReport();
   renderQuestionnairePacket();

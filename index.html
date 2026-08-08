@@ -38,10 +38,12 @@
       <nav class="tabs" aria-label="Prototype views">
         <button class="tab is-active" type="button" data-tab="watchlist">Watchlist</button>
         <button class="tab" type="button" data-tab="brief">Artist Brief</button>
+        <button class="tab" type="button" data-tab="timeline">Timeline / Network</button>
         <button class="tab" type="button" data-tab="evidence">Signal Evidence</button>
         <button class="tab" type="button" data-tab="scoring">Scoring</button>
         <button class="tab" type="button" data-tab="compare">Compare</button>
         <button class="tab" type="button" data-tab="notes">A&R Notes</button>
+        <button class="tab" type="button" data-tab="learning">Learning Review</button>
         <button class="tab" type="button" data-tab="strategy">Strategy</button>
         <button class="tab" type="button" data-tab="report">Report Preview</button>
         <button class="tab" type="button" data-tab="questionnaire">Questionnaire</button>
@@ -97,6 +99,20 @@
         <div class="detail-grid">
           <article class="detail-panel" id="artistBrief"></article>
           <aside class="detail-panel muted-panel" id="riskPanel"></aside>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="timeline" aria-labelledby="timeline-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Granular intelligence</p>
+            <h2 id="timeline-title">Timeline and network context</h2>
+          </div>
+          <span class="status-pill">Manual public evidence only</span>
+        </div>
+        <div class="timeline-layout">
+          <div class="timeline-list" id="timelineList"></div>
+          <aside class="detail-panel" id="networkPanel"></aside>
         </div>
       </section>
 
@@ -162,6 +178,20 @@
             <button type="submit">Save local note</button>
           </form>
           <div class="detail-panel" id="savedNote"></div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="learning" aria-labelledby="learning-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Human feedback / AI learning</p>
+            <h2 id="learning-title">Recommendation review</h2>
+          </div>
+          <span class="status-pill">Propose changes only</span>
+        </div>
+        <div class="learning-grid">
+          <article class="detail-panel" id="learningPanel"></article>
+          <aside class="detail-panel muted-panel" id="feedbackPanel"></aside>
         </div>
       </section>
 
