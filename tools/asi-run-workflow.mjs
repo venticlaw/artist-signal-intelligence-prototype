@@ -99,6 +99,12 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
 
+async function projectRoot() {
+  const cwd = resolve(process.cwd());
+  if (await exists(resolve(cwd, "tools/asi-run-daily.mjs"))) return cwd;
+  return resolve(new URL("..", import.meta.url).pathname);
+}
+
 function parseChild(stdout) {
   try {
     return JSON.parse(stdout || "{}");
@@ -119,7 +125,7 @@ async function main() {
   if (!validDate(args.date)) throw new Error("--date must be YYYY-MM-DD.");
   if (args["reviewed-queue"] && !args.analyst) throw new Error("--analyst is required when --reviewed-queue is provided.");
 
-  const cwd = resolve(new URL("..", import.meta.url).pathname);
+  const cwd = await projectRoot();
   const runsRoot = resolve(args.runs);
   const runDir = resolve(runsRoot, args.date);
   const artifactsDir = resolve(runDir, "workflow-artifacts");
