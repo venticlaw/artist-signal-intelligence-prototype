@@ -30,8 +30,16 @@ const maxPoints = {
 
 const $ = (selector) => document.querySelector(selector);
 
+const confidenceLabels = ["High", "Medium", "Low", "Insufficient"];
+const sourceLabels = ["Observed", "Reported by artist/team", "Third-party public source", "Estimated", "Unknown"];
+
 const importTemplate = {
   status: "private-browser-import",
+  reviewMode: "manual-public-evidence-only",
+  analyst: "ANALYST NAME OR INITIALS",
+  createdAt: "YYYY-MM-DD",
+  publicationApproval: "not-approved",
+  dataPolicy: "Manually reviewed public evidence only. No scraping, paid/gated/login-only sources, private data, outreach, or automated collection.",
   artists: [
     {
       id: "private-review-artist-001",
@@ -58,9 +66,11 @@ const importTemplate = {
         {
           category: "Public social velocity",
           label: "Observed",
+          observedDate: "YYYY-MM-DD",
+          sourceUrl: "https://public-source-url.example/path",
           freshness: "YYYY-MM-DD observed date",
           confidence: "Low",
-          detail: "Analyst note. Include source URL in the note if approved for private review."
+          detail: "Analyst note with the exact public evidence observed and any unresolved unknowns."
         }
       ]
     }
@@ -83,7 +93,28 @@ function clampScore(value, max) {
 }
 
 function validConfidence(value) {
-  return ["High", "Medium", "Low", "Insufficient"].includes(value) ? value : "Insufficient";
+  return confidenceLabels.includes(value) ? value : "Insufficient";
+}
+
+function hasText(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function validDateOrUnknown(value) {
+  return value === "Unknown" || /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function validEvidenceUrl(value, sourceLabel) {
+  if (sourceLabel === "Unknown") return value === "Unknown";
+  return typeof value === "string" && /^https:\/\/[^\s]+$/i.test(value.trim());
+}
+
+function sourceLink(signal) {
+  if (!signal.sourceUrl || signal.sourceUrl === "Unknown") {
+    return '<span class="tag warning">Source URL unknown</span>';
+  }
+  const url = escapeHtml(signal.sourceUrl);
+  return `<a class="source-link" href="${url}" target="_blank" rel="noopener noreferrer">Open source</a>`;
 }
 
 function getMode() {
@@ -232,6 +263,8 @@ function renderEvidence() {
           <div class="tag-row">
             <span class="tag">${escapeHtml(signal.confidence)}</span>
             <span class="tag">${escapeHtml(signal.freshness)}</span>
+            <span class="tag">Observed ${escapeHtml(signal.observedDate || "Unknown")}</span>
+            ${sourceLink(signal)}
             ${signal.confidence === "Low" ? '<span class="tag warning">Review required</span>' : ""}
           </div>
         </article>
@@ -328,7 +361,11 @@ function renderReport() {
     artist.scene,
     ``,
     `Top signals:`,
-    ...artist.signals.map((signal) => `- ${signal.category}: ${signal.detail} (${signal.confidence})`),
+    ...artist.signals.map((signal) => {
+      const source = signal.sourceUrl && signal.sourceUrl !== "Unknown" ? ` Source: ${signal.sourceUrl}` : " Source: Unknown";
+      const observed = signal.observedDate ? ` Observed: ${signal.observedDate}.` : " Observed: Unknown.";
+      return `- ${signal.category}: ${signal.detail} (${signal.confidence}; ${signal.label}).${observed}${source}`;
+    }),
     ``,
     `Risks:`,
     ...artist.risks.map((risk) => `- ${risk}`),
@@ -344,6 +381,44 @@ function renderReport() {
   $("#reportPreview").textContent = report;
 }
 
+function currentReportText() {
+  return $("#reportPreview").textContent || "";
+}
+
+function safeFileSegment(value) {
+  return String(value || "artist")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "artist";
+}
+
+async function copyReport() {
+  const report = currentReportText();
+  if (!navigator.clipboard?.writeText) {
+    $("#exportStatus").textContent = "Copy is unavailable in this browser. Select the report text manually.";
+    return;
+  }
+  await navigator.clipboard.writeText(report);
+  $("#exportStatus").textContent = "Copied Markdown report to clipboard. Private imports still require publication approval.";
+}
+
+function downloadReport() {
+  const artist = getArtist();
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `asi-report-${safeFileSegment(artist.name)}-${date}.md`;
+  const blob = new Blob([currentReportText()], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  $("#exportStatus").textContent = `Downloaded ${filename}. Do not publish private artist packets without separate approval.`;
+}
+
 function renderGates() {
   $("#gateGrid").innerHTML = state.data.approvalGates
     .map(
@@ -357,6 +432,39 @@ function renderGates() {
     .join("");
 }
 
+function normalizeSignal(rawSignal, signalIndex, artistName) {
+  if (!rawSignal || typeof rawSignal !== "object") {
+    throw new Error(`${artistName} signal ${signalIndex + 1} is not an object.`);
+  }
+
+  const category = String(rawSignal.category || "").trim();
+  const label = String(rawSignal.label || "").trim();
+  const observedDate = String(rawSignal.observedDate || "").trim();
+  const sourceUrl = String(rawSignal.sourceUrl || "").trim();
+  const confidence = String(rawSignal.confidence || "").trim();
+  const detail = String(rawSignal.detail || "").trim();
+  const freshness = String(rawSignal.freshness || observedDate || "Unknown").trim();
+
+  if (!category) throw new Error(`${artistName} signal ${signalIndex + 1} is missing category.`);
+  if (!sourceLabels.includes(label)) {
+    throw new Error(`${artistName} signal ${signalIndex + 1} needs a valid source label.`);
+  }
+  if (!confidenceLabels.includes(confidence)) {
+    throw new Error(`${artistName} signal ${signalIndex + 1} needs a valid confidence label.`);
+  }
+  if (!validDateOrUnknown(observedDate)) {
+    throw new Error(`${artistName} signal ${signalIndex + 1} needs observedDate as YYYY-MM-DD or Unknown.`);
+  }
+  if (!validEvidenceUrl(sourceUrl, label)) {
+    throw new Error(`${artistName} signal ${signalIndex + 1} needs an https sourceUrl, or sourceUrl Unknown when label is Unknown.`);
+  }
+  if (detail.length < 12) {
+    throw new Error(`${artistName} signal ${signalIndex + 1} needs a specific evidence detail.`);
+  }
+
+  return { category, label, freshness, confidence, detail, observedDate, sourceUrl };
+}
+
 function normalizeArtist(rawArtist, index) {
   if (!rawArtist || typeof rawArtist !== "object") {
     throw new Error(`Artist ${index + 1} is not an object.`);
@@ -364,20 +472,30 @@ function normalizeArtist(rawArtist, index) {
 
   const name = String(rawArtist.name || "").trim();
   if (!name) throw new Error(`Artist ${index + 1} is missing a name.`);
+  if (!hasText(rawArtist.scene)) throw new Error(`${name} is missing scene/community context.`);
+  if (!hasText(rawArtist.summary)) throw new Error(`${name} is missing a summary.`);
+  if (!rawArtist.scores || typeof rawArtist.scores !== "object") throw new Error(`${name} is missing scores.`);
+  if (!hasText(rawArtist.recommendation)) throw new Error(`${name} is missing a recommendation.`);
+  if (!hasText(rawArtist.strategy)) throw new Error(`${name} is missing a strategy.`);
+  if (!hasText(rawArtist.disconfirmingEvidence)) throw new Error(`${name} is missing disconfirming evidence.`);
+  if (!Array.isArray(rawArtist.risks) || !rawArtist.risks.length) throw new Error(`${name} needs at least one risk or unknown.`);
 
   const scores = {};
   Object.entries(maxPoints).forEach(([key, max]) => {
+    if (!(key in rawArtist.scores)) {
+      throw new Error(`${name} is missing score dimension ${key}.`);
+    }
+    if (!Number.isFinite(Number(rawArtist.scores[key]))) {
+      throw new Error(`${name} score ${key} must be numeric.`);
+    }
     scores[key] = clampScore(rawArtist.scores?.[key], max);
   });
+  if (!confidenceLabels.includes(rawArtist.confidence)) {
+    throw new Error(`${name} needs a valid confidence label.`);
+  }
 
   const signals = Array.isArray(rawArtist.signals)
-    ? rawArtist.signals.map((signal) => ({
-        category: String(signal.category || "Uncategorized signal"),
-        label: String(signal.label || "Unknown"),
-        freshness: String(signal.freshness || "Unknown"),
-        confidence: validConfidence(signal.confidence),
-        detail: String(signal.detail || "No detail provided.")
-      }))
+    ? rawArtist.signals.map((signal, signalIndex) => normalizeSignal(signal, signalIndex, name))
     : [];
 
   if (!signals.length) {
@@ -391,7 +509,7 @@ function normalizeArtist(rawArtist, index) {
     scene: String(rawArtist.scene || "Unknown scene/community context"),
     summary: String(rawArtist.summary || "No summary provided."),
     scores,
-    confidence: validConfidence(rawArtist.confidence),
+    confidence: rawArtist.confidence,
     recommendation: String(rawArtist.recommendation || "Needs more research"),
     strategy: String(rawArtist.strategy || "No strategy recommendation provided."),
     disconfirmingEvidence: String(rawArtist.disconfirmingEvidence || "No disconfirming evidence provided."),
@@ -403,16 +521,28 @@ function normalizeArtist(rawArtist, index) {
 }
 
 function normalizeImport(rawPacket) {
-  const artistsInput = Array.isArray(rawPacket?.artists)
-    ? rawPacket.artists
-    : rawPacket?.artist
-      ? [rawPacket.artist]
-      : Array.isArray(rawPacket)
-        ? rawPacket
-        : [];
+  if (!rawPacket || typeof rawPacket !== "object" || Array.isArray(rawPacket)) {
+    throw new Error("Import must be a strict private-browser-import packet object.");
+  }
+  if (rawPacket.status !== "private-browser-import") {
+    throw new Error("Import status must be private-browser-import.");
+  }
+  if (rawPacket.reviewMode !== "manual-public-evidence-only") {
+    throw new Error("reviewMode must be manual-public-evidence-only.");
+  }
+  if (!hasText(rawPacket.analyst)) throw new Error("Import needs analyst name or initials.");
+  if (!validDateOrUnknown(rawPacket.createdAt) || rawPacket.createdAt === "Unknown") {
+    throw new Error("Import needs createdAt as YYYY-MM-DD.");
+  }
+  if (rawPacket.publicationApproval !== "not-approved") {
+    throw new Error("publicationApproval must remain not-approved inside this prototype.");
+  }
+  if (!hasText(rawPacket.dataPolicy)) throw new Error("Import needs a dataPolicy statement.");
+
+  const artistsInput = Array.isArray(rawPacket.artists) ? rawPacket.artists : [];
 
   if (!artistsInput.length) {
-    throw new Error("Import must contain an artists array, an artist object, or an array of artists.");
+    throw new Error("Import must contain a non-empty artists array.");
   }
 
   return {
@@ -468,6 +598,24 @@ function bindImportForm() {
   });
 }
 
+function bindExportActions() {
+  $("#copyReportButton").addEventListener("click", async () => {
+    try {
+      await copyReport();
+    } catch (error) {
+      $("#exportStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#downloadReportButton").addEventListener("click", () => {
+    try {
+      downloadReport();
+    } catch (error) {
+      $("#exportStatus").textContent = `Download failed: ${error.message}`;
+    }
+  });
+}
+
 function renderAll() {
   if (!state.data) return;
   $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
@@ -490,6 +638,7 @@ async function init() {
   renderTabs();
   bindNotesForm();
   bindImportForm();
+  bindExportActions();
   renderAll();
 }
 

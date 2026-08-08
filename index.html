@@ -134,9 +134,16 @@
 
       <section class="tab-panel" id="report" aria-labelledby="report-title">
         <div class="section-heading">
-          <p class="eyebrow">Placeholder packet</p>
-          <h2 id="report-title">Scouting report preview</h2>
+          <div>
+            <p class="eyebrow">Browser-local packet</p>
+            <h2 id="report-title">Scouting report preview</h2>
+          </div>
+          <div class="export-actions" aria-label="Report export controls">
+            <button class="secondary-button" type="button" id="copyReportButton">Copy Markdown</button>
+            <button type="button" id="downloadReportButton">Download Markdown</button>
+          </div>
         </div>
+        <p class="export-status" id="exportStatus">Exports are generated in this browser only. Private imports still require separate approval before publication.</p>
         <pre class="report-box" id="reportPreview"></pre>
       </section>
 

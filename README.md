@@ -12,6 +12,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - The app runs as static HTML, CSS, JavaScript, and local JSON.
 - Notes are stored only in the visitor's browser local storage.
 - Private import runs only in the browser session from a local JSON file or pasted JSON.
+- Report copy/download runs only in the browser and creates Markdown from the currently loaded packet.
 - Approval-gated actions are displayed as blocked actions, not active controls.
 
 ## Local Run
@@ -24,4 +25,6 @@ Durable ASI planning remains under `_data/channel-work/asi/`. This prototype is 
 
 ## Private Import
 
-The `Private Import` tab accepts a local JSON packet shaped like the ASI intake template. Imported records are not uploaded or committed; they render only in the current browser session. Do not add real artist packets to this public repository or to GitHub Pages fixtures.
+The `Private Import` tab accepts a local JSON packet shaped like the ASI intake template. Imported records are not uploaded or committed; they render only in the current browser session.
+
+Private packets must use manually reviewed public evidence, keep publication approval as `not-approved`, and include source-separated signal details with source label, observed date, confidence, and an `https://` source URL unless the source is explicitly `Unknown`. Do not add real artist packets to this public repository or to GitHub Pages fixtures.

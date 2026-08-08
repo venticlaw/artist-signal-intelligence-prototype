@@ -452,6 +452,7 @@ input[type="file"] {
 
 .notes-form button,
 .import-panel button,
+.export-actions button,
 .quiet-button {
   min-height: 44px;
   border: 0;
@@ -473,6 +474,13 @@ input[type="file"] {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .secondary-button {
@@ -500,6 +508,18 @@ input[type="file"] {
 .import-status {
   margin-bottom: 0;
   color: var(--muted);
+}
+
+.export-status {
+  margin: -8px 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.source-link {
+  color: var(--blue);
+  font-size: 0.84rem;
+  font-weight: 850;
 }
 
 .schema-box {
