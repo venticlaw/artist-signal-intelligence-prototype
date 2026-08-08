@@ -40,17 +40,51 @@
         <button class="tab" type="button" data-tab="brief">Artist Brief</button>
         <button class="tab" type="button" data-tab="evidence">Signal Evidence</button>
         <button class="tab" type="button" data-tab="scoring">Scoring</button>
+        <button class="tab" type="button" data-tab="compare">Compare</button>
         <button class="tab" type="button" data-tab="notes">A&R Notes</button>
         <button class="tab" type="button" data-tab="strategy">Strategy</button>
         <button class="tab" type="button" data-tab="report">Report Preview</button>
+        <button class="tab" type="button" data-tab="questionnaire">Questionnaire</button>
         <button class="tab" type="button" data-tab="import">Private Import</button>
         <button class="tab" type="button" data-tab="gates">Approval Gates</button>
       </nav>
 
       <section class="tab-panel is-active" id="watchlist" aria-labelledby="watchlist-title">
         <div class="section-heading">
-          <p class="eyebrow">Private watchlist simulation</p>
-          <h2 id="watchlist-title">Fictional artist queue</h2>
+          <div>
+            <p class="eyebrow">Private watchlist simulation</p>
+            <h2 id="watchlist-title">Fictional artist queue</h2>
+          </div>
+          <div class="queue-summary" id="queueSummary"></div>
+        </div>
+        <div class="filter-bar" aria-label="Watchlist filters">
+          <label>
+            Search
+            <input id="searchInput" type="search" placeholder="Name, scene, signal, risk" />
+          </label>
+          <label>
+            Confidence
+            <select id="confidenceFilter">
+              <option value="all">All confidence</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+              <option>Insufficient</option>
+            </select>
+          </label>
+          <label>
+            Minimum buyer fit
+            <input id="minimumFit" type="number" min="0" max="100" step="5" value="0" />
+          </label>
+          <label>
+            Sort
+            <select id="sortInput">
+              <option value="buyerFit">Buyer fit</option>
+              <option value="baseScore">Base score</option>
+              <option value="confidence">Confidence</option>
+              <option value="name">Name</option>
+            </select>
+          </label>
         </div>
         <div class="watchlist-grid" id="watchlistGrid"></div>
       </section>
@@ -81,15 +115,21 @@
         </div>
         <div class="score-layout">
           <div class="score-bars" id="scoreBars"></div>
-          <div class="detail-panel">
-            <h3>Guardrails</h3>
-            <ul class="check-list">
-              <li>Source categories stay separate.</li>
-              <li>Unknowns remain visible.</li>
-              <li>Suspicious or impossible values lower confidence.</li>
-              <li>Human review is required before score-rule changes.</li>
-            </ul>
+          <div class="detail-panel" id="scoreExplainer">
           </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="compare" aria-labelledby="compare-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Buyer-fit comparison</p>
+            <h2 id="compare-title">Artist comparison</h2>
+          </div>
+          <span class="status-pill">Current filters apply</span>
+        </div>
+        <div class="compare-table-wrap">
+          <table class="compare-table" id="compareTable"></table>
         </div>
       </section>
 
@@ -118,6 +158,7 @@
               Human learning note
               <textarea id="noteInput" rows="5" maxlength="420"></textarea>
             </label>
+            <p class="import-status">Notes save to this browser only and may remain on this machine. Do not enter private notes on a shared device.</p>
             <button type="submit">Save local note</button>
           </form>
           <div class="detail-panel" id="savedNote"></div>
@@ -145,6 +186,57 @@
         </div>
         <p class="export-status" id="exportStatus">Exports are generated in this browser only. Private imports still require separate approval before publication.</p>
         <pre class="report-box" id="reportPreview"></pre>
+      </section>
+
+      <section class="tab-panel" id="questionnaire" aria-labelledby="questionnaire-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Pre-build configuration</p>
+            <h2 id="questionnaire-title">Buyer requirements questionnaire</h2>
+          </div>
+          <div class="export-actions" aria-label="Questionnaire export controls">
+            <button class="secondary-button" type="button" id="copyQuestionnaireButton">Copy Packet</button>
+            <button type="button" id="downloadQuestionnaireButton">Download Packet</button>
+          </div>
+        </div>
+        <div class="questionnaire-grid">
+          <form class="import-panel" id="questionnaireForm">
+            <label>
+              Buyer segment
+              <select id="buyerSegmentInput">
+                <option>Independent distributor / label services</option>
+                <option>Independent label</option>
+                <option>Major-label A&R</option>
+                <option>Management company</option>
+                <option>Playlist / marketing team</option>
+                <option>Brand / music partnership buyer</option>
+              </select>
+            </label>
+            <label>
+              Genres, scenes, or markets to prioritize
+              <textarea id="marketInput" rows="4" maxlength="600"></textarea>
+            </label>
+            <label>
+              Deal or campaign goal
+              <textarea id="goalInput" rows="4" maxlength="600"></textarea>
+            </label>
+            <label>
+              Must-have signals
+              <textarea id="mustHaveInput" rows="4" maxlength="600"></textarea>
+            </label>
+            <label>
+              Automatic pass or caution criteria
+              <textarea id="passCriteriaInput" rows="4" maxlength="600"></textarea>
+            </label>
+            <label>
+              Existing systems or handoff format
+              <textarea id="integrationInput" rows="4" maxlength="600"></textarea>
+            </label>
+            <button type="submit">Generate requirement packet</button>
+            <p class="import-status" id="questionnaireStatus">Packet renders locally only.</p>
+          </form>
+          <pre class="report-box compact-report" id="questionnairePreview"></pre>
+        </div>
       </section>
 
       <section class="tab-panel" id="import" aria-labelledby="import-title">

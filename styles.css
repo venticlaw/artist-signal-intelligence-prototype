@@ -182,6 +182,17 @@ input[type="file"] {
   background: #fff;
 }
 
+input[type="search"],
+input[type="number"] {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--strong-line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #fff;
+}
+
 .mode-summary,
 .safety-callout {
   padding: 14px 16px;
@@ -242,6 +253,36 @@ input[type="file"] {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+.filter-bar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.3fr) repeat(3, minmax(160px, 0.55fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.queue-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.queue-summary span {
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--teal-dark);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .artist-card {
@@ -522,6 +563,60 @@ input[type="file"] {
   font-weight: 850;
 }
 
+.compare-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.compare-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.compare-table th {
+  color: var(--teal-dark);
+  background: #edf5f4;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.table-link {
+  padding: 0;
+  border: 0;
+  color: var(--blue);
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.questionnaire-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 14px;
+}
+
+.compact-report {
+  min-height: 620px;
+}
+
+.empty-state {
+  min-height: 220px;
+}
+
 .schema-box {
   max-height: 360px;
   overflow: auto;
@@ -575,9 +670,11 @@ footer {
 @media (max-width: 1000px) {
   .control-band,
   .watchlist-grid,
+  .filter-bar,
   .detail-grid,
   .score-layout,
   .notes-grid,
+  .questionnaire-grid,
   .import-grid,
   .gate-grid {
     grid-template-columns: 1fr;

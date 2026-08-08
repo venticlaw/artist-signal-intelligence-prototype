@@ -3,7 +3,14 @@ const state = {
   defaultData: null,
   activeArtistId: null,
   buyerModeId: "distributor",
-  dataSourceLabel: "Fictional fixtures"
+  dataSourceLabel: "Fictional fixtures",
+  filters: {
+    search: "",
+    confidence: "all",
+    minimumFit: 0,
+    sort: "buyerFit"
+  },
+  questionnairePacket: ""
 };
 
 const dimensionLabels = {
@@ -32,6 +39,7 @@ const $ = (selector) => document.querySelector(selector);
 
 const confidenceLabels = ["High", "Medium", "Low", "Insufficient"];
 const sourceLabels = ["Observed", "Reported by artist/team", "Third-party public source", "Estimated", "Unknown"];
+const confidenceRank = { High: 4, Medium: 3, Low: 2, Insufficient: 1 };
 
 const importTemplate = {
   status: "private-browser-import",
@@ -125,6 +133,39 @@ function getArtist() {
   return state.data.artists.find((artist) => artist.id === state.activeArtistId);
 }
 
+function artistSearchText(artist) {
+  return [
+    artist.name,
+    artist.stage,
+    artist.scene,
+    artist.summary,
+    artist.recommendation,
+    artist.strategy,
+    artist.disconfirmingEvidence,
+    ...(artist.risks || []),
+    ...(artist.signals || []).flatMap((signal) => [signal.category, signal.label, signal.detail])
+  ].join(" ").toLowerCase();
+}
+
+function filteredArtists() {
+  const mode = getMode();
+  const query = state.filters.search.trim().toLowerCase();
+  return [...state.data.artists]
+    .filter((artist) => {
+      const fit = weightedScore(artist, mode);
+      const confidenceMatch = state.filters.confidence === "all" || artist.confidence === state.filters.confidence;
+      const fitMatch = fit >= state.filters.minimumFit;
+      const searchMatch = !query || artistSearchText(artist).includes(query);
+      return confidenceMatch && fitMatch && searchMatch;
+    })
+    .sort((a, b) => {
+      if (state.filters.sort === "baseScore") return baseScore(b) - baseScore(a);
+      if (state.filters.sort === "confidence") return (confidenceRank[b.confidence] || 0) - (confidenceRank[a.confidence] || 0);
+      if (state.filters.sort === "name") return a.name.localeCompare(b.name);
+      return weightedScore(b, mode) - weightedScore(a, mode);
+    });
+}
+
 function weightedScore(artist, mode) {
   const weighted = Object.entries(artist.scores).reduce(
     (sum, [key, value]) => sum + value * (mode.weights[key] || 1),
@@ -162,6 +203,28 @@ function renderModeControl() {
   $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
 }
 
+function bindWatchlistControls() {
+  $("#searchInput").addEventListener("input", (event) => {
+    state.filters.search = event.target.value;
+    renderAll();
+  });
+
+  $("#confidenceFilter").addEventListener("change", (event) => {
+    state.filters.confidence = event.target.value;
+    renderAll();
+  });
+
+  $("#minimumFit").addEventListener("input", (event) => {
+    state.filters.minimumFit = clampScore(event.target.value, 100);
+    renderAll();
+  });
+
+  $("#sortInput").addEventListener("change", (event) => {
+    state.filters.sort = event.target.value;
+    renderAll();
+  });
+}
+
 function renderTabs() {
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -175,7 +238,18 @@ function renderTabs() {
 
 function renderWatchlist() {
   const mode = getMode();
-  $("#watchlistGrid").innerHTML = state.data.artists
+  const artists = filteredArtists();
+  const total = state.data.artists.length;
+  const highConfidence = artists.filter((artist) => artist.confidence === "High").length;
+  const bestFit = artists[0] ? weightedScore(artists[0], mode) : 0;
+  $("#queueSummary").innerHTML = `
+    <span>${artists.length}/${total} visible</span>
+    <span>${highConfidence} high confidence</span>
+    <span>Top fit ${bestFit}</span>
+  `;
+
+  $("#watchlistGrid").innerHTML = artists.length
+    ? artists
     .map((artist) => {
       const fit = weightedScore(artist, mode);
       const base = baseScore(artist);
@@ -210,7 +284,14 @@ function renderWatchlist() {
         </article>
       `;
     })
-    .join("");
+    .join("")
+    : `
+      <article class="detail-panel empty-state">
+        <p class="eyebrow">No visible records</p>
+        <h3>Adjust filters</h3>
+        <p class="summary">No artists match the current search, confidence, and buyer-fit filters.</p>
+      </article>
+    `;
 
   document.querySelectorAll(".artist-card").forEach((card) => {
     const selectArtist = () => {
@@ -275,21 +356,82 @@ function renderEvidence() {
 
 function renderScoring() {
   const artist = getArtist();
+  const mode = getMode();
   $("#scoreBars").innerHTML = Object.entries(maxPoints)
     .map(([key, max]) => {
       const value = artist.scores[key];
       const percent = Math.round((value / max) * 100);
+      const weight = mode.weights[key] || 1;
       return `
         <div class="score-bar">
           <div class="score-row">
             <strong>${dimensionLabels[key]}</strong>
-            <span>${value}/${max}</span>
+            <span>${value}/${max} x ${weight}</span>
           </div>
           <div class="bar-track" aria-hidden="true"><span style="--value: ${percent}%"></span></div>
         </div>
       `;
     })
     .join("");
+
+  const strongest = Object.entries(artist.scores).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const weakest = Object.entries(artist.scores).sort((a, b) => a[1] - b[1]).slice(0, 3);
+  $("#scoreExplainer").innerHTML = `
+    <h3>Why this score</h3>
+    <p>${escapeHtml(mode.label)} emphasizes dimensions differently from the base score. Buyer fit is ${weightedScore(artist, mode)}/100 and base score is ${baseScore(artist)}/100.</p>
+    <h3>Strongest dimensions</h3>
+    <ul class="check-list">${strongest.map(([key, value]) => `<li>${escapeHtml(dimensionLabels[key])}: ${value}/${maxPoints[key]}</li>`).join("")}</ul>
+    <h3>Weakest dimensions</h3>
+    <ul class="check-list">${weakest.map(([key, value]) => `<li>${escapeHtml(dimensionLabels[key])}: ${value}/${maxPoints[key]}</li>`).join("")}</ul>
+    <h3>Guardrails</h3>
+    <ul class="check-list">
+      <li>Source categories stay separate.</li>
+      <li>Unknowns remain visible.</li>
+      <li>Suspicious or impossible values lower confidence.</li>
+      <li>Human review is required before score-rule changes.</li>
+    </ul>
+  `;
+}
+
+function renderCompare() {
+  const mode = getMode();
+  const artists = filteredArtists();
+  const rows = artists.map((artist) => `
+    <tr>
+      <td><button class="table-link" type="button" data-artist-id="${escapeHtml(artist.id)}">${escapeHtml(artist.name)}</button></td>
+      <td>${weightedScore(artist, mode)}</td>
+      <td>${baseScore(artist)}</td>
+      <td>${escapeHtml(artist.confidence)}</td>
+      <td>${escapeHtml(artist.stage)}</td>
+      <td>${escapeHtml(artist.recommendation)}</td>
+      <td>${escapeHtml(artist.risks[0] || "No risk listed")}</td>
+    </tr>
+  `).join("");
+
+  $("#compareTable").innerHTML = `
+    <thead>
+      <tr>
+        <th>Artist</th>
+        <th>Buyer fit</th>
+        <th>Base</th>
+        <th>Confidence</th>
+        <th>Stage</th>
+        <th>Next action</th>
+        <th>Top risk</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows || '<tr><td colspan="7">No artists match the current filters.</td></tr>'}
+    </tbody>
+  `;
+
+  document.querySelectorAll(".table-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeArtistId = button.dataset.artistId;
+      renderAll();
+      document.querySelector('[data-tab="brief"]').click();
+    });
+  });
 }
 
 function renderNotes() {
@@ -299,7 +441,12 @@ function renderNotes() {
     .join("");
 
   const artist = getArtist();
-  const saved = JSON.parse(localStorage.getItem(`asi-note-${artist.id}`) || "null");
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(`asi-note-${artist.id}`) || "null");
+  } catch {
+    saved = null;
+  }
   $("#savedNote").innerHTML = saved
     ? `
       <p class="eyebrow">Browser-local note</p>
@@ -381,6 +528,48 @@ function renderReport() {
   $("#reportPreview").textContent = report;
 }
 
+function buildQuestionnairePacket() {
+  return [
+    `# ASI Buyer Requirements Packet`,
+    ``,
+    `Status: Local draft only`,
+    `Generated: ${new Date().toISOString()}`,
+    ``,
+    `## Buyer Segment`,
+    $("#buyerSegmentInput").value,
+    ``,
+    `## Priority Genres / Scenes / Markets`,
+    $("#marketInput").value.trim() || "Not specified.",
+    ``,
+    `## Deal Or Campaign Goal`,
+    $("#goalInput").value.trim() || "Not specified.",
+    ``,
+    `## Must-Have Signals`,
+    $("#mustHaveInput").value.trim() || "Not specified.",
+    ``,
+    `## Pass Or Caution Criteria`,
+    $("#passCriteriaInput").value.trim() || "Not specified.",
+    ``,
+    `## Existing Systems / Handoff Format`,
+    $("#integrationInput").value.trim() || "Not specified.",
+    ``,
+    `## Required Output Defaults`,
+    `- Watchlist with buyer-fit score, base score, confidence, and top risk.`,
+    `- Artist brief with scene/community context and relationship/network notes.`,
+    `- Source-separated evidence with label, observed date, source URL, freshness, and confidence.`,
+    `- A&R decision note with pass/caution reason and human learning note.`,
+    `- Markdown scouting report export for private review.`,
+    ``,
+    `## Gated Until Separately Approved`,
+    `No outreach, scraping, paid datasets/APIs, backend storage, lead capture, public real-artist rankings, payment, DNS, Drive movement, outbound sends, or deletion.`
+  ].join("\n");
+}
+
+function renderQuestionnairePacket() {
+  state.questionnairePacket = buildQuestionnairePacket();
+  $("#questionnairePreview").textContent = state.questionnairePacket;
+}
+
 function currentReportText() {
   return $("#reportPreview").textContent || "";
 }
@@ -417,6 +606,32 @@ function downloadReport() {
   anchor.remove();
   URL.revokeObjectURL(url);
   $("#exportStatus").textContent = `Downloaded ${filename}. Do not publish private artist packets without separate approval.`;
+}
+
+async function copyQuestionnaire() {
+  renderQuestionnairePacket();
+  if (!navigator.clipboard?.writeText) {
+    $("#questionnaireStatus").textContent = "Copy is unavailable in this browser. Select the packet text manually.";
+    return;
+  }
+  await navigator.clipboard.writeText(state.questionnairePacket);
+  $("#questionnaireStatus").textContent = "Copied buyer requirements packet to clipboard.";
+}
+
+function downloadQuestionnaire() {
+  renderQuestionnairePacket();
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `asi-buyer-requirements-${date}.md`;
+  const blob = new Blob([state.questionnairePacket], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  $("#questionnaireStatus").textContent = `Downloaded ${filename}.`;
 }
 
 function renderGates() {
@@ -616,6 +831,35 @@ function bindExportActions() {
   });
 }
 
+function bindQuestionnaireForm() {
+  $("#questionnaireForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    renderQuestionnairePacket();
+    $("#questionnaireStatus").textContent = "Generated buyer requirements packet locally.";
+  });
+
+  ["buyerSegmentInput", "marketInput", "goalInput", "mustHaveInput", "passCriteriaInput", "integrationInput"].forEach((id) => {
+    document.getElementById(id).addEventListener("input", renderQuestionnairePacket);
+    document.getElementById(id).addEventListener("change", renderQuestionnairePacket);
+  });
+
+  $("#copyQuestionnaireButton").addEventListener("click", async () => {
+    try {
+      await copyQuestionnaire();
+    } catch (error) {
+      $("#questionnaireStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#downloadQuestionnaireButton").addEventListener("click", () => {
+    try {
+      downloadQuestionnaire();
+    } catch (error) {
+      $("#questionnaireStatus").textContent = `Download failed: ${error.message}`;
+    }
+  });
+}
+
 function renderAll() {
   if (!state.data) return;
   $("#modeSummary").textContent = `${getMode().description} Data source: ${state.dataSourceLabel}.`;
@@ -623,9 +867,11 @@ function renderAll() {
   renderBrief();
   renderEvidence();
   renderScoring();
+  renderCompare();
   renderNotes();
   renderStrategy();
   renderReport();
+  renderQuestionnairePacket();
   renderGates();
 }
 
@@ -636,9 +882,11 @@ async function init() {
   state.activeArtistId = state.data.artists[0].id;
   renderModeControl();
   renderTabs();
+  bindWatchlistControls();
   bindNotesForm();
   bindImportForm();
   bindExportActions();
+  bindQuestionnaireForm();
   renderAll();
 }
 
