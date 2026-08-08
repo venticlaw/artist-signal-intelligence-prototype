@@ -16,6 +16,7 @@ function usage() {
     "  --date     Optional YYYY-MM-DD run date, defaults to today",
     "  --state    Optional previous discovery-state.json for new/repeat/delta scoring",
     "  --state-out Optional state output path, defaults to <out>/discovery-state.json",
+    "  --prepare-only Generate query plan, worksheet, row template, and summary without source rows",
     "",
     "This tool normalizes approved/manual rows only. It does not call TikTok, scrape, authenticate, store credentials, or publish results."
   ].join("\n");
@@ -28,6 +29,10 @@ function parseArgs(argv) {
     const value = argv[index + 1];
     if (key === "--help" || key === "-h") {
       args.help = true;
+      continue;
+    }
+    if (key === "--prepare-only") {
+      args["prepare-only"] = true;
       continue;
     }
     if (!key.startsWith("--")) throw new Error(`Unexpected argument: ${key}`);
@@ -568,7 +573,7 @@ function buildHumanReviewQueue(candidates, profiles, runDate) {
   };
 }
 
-function buildSummary(profiles, rows, candidates, runDate, statePath, worksheetRows) {
+function buildSummary(profiles, rows, candidates, runDate, statePath, worksheetRows, mode) {
   const shortlistCount = candidates.filter((candidate) => candidate.surge.decision === "Shortlist").length;
   const dailyReviewCount = candidates.filter((candidate) => candidate.surge.decision === "Daily review").length;
   const watchCount = candidates.filter((candidate) => candidate.surge.decision === "Watch").length;
@@ -580,6 +585,7 @@ function buildSummary(profiles, rows, candidates, runDate, statePath, worksheetR
   const rowsWithMissingTarget = rows.filter((row) => !row.targetId).length;
   return {
     status: "daily-discovery-summary",
+    mode,
     createdAt: runDate,
     targetsSearched: profiles.length,
     searchTasksGenerated: worksheetRows.length,
@@ -615,28 +621,29 @@ async function main() {
     console.log(usage());
     return;
   }
-  if (!args.targets || !args.rows || !args.out) {
+  const prepareOnly = Boolean(args["prepare-only"]);
+  if (!args.targets || !args.out || (!args.rows && !prepareOnly)) {
     throw new Error(`Missing required arguments.\n\n${usage()}`);
   }
   if (!validDate(args.date)) throw new Error("--date must be YYYY-MM-DD.");
 
   const targetsPath = resolve(args.targets);
-  const rowsPath = resolve(args.rows);
+  const rowsPath = args.rows ? resolve(args.rows) : null;
   const outputDir = resolve(args.out);
   const previousState = await loadState(args.state ? resolve(args.state) : null);
-  const stateOutPath = resolve(args["state-out"] || `${outputDir}/discovery-state.json`);
+  const stateOutPath = prepareOnly ? null : resolve(args["state-out"] || `${outputDir}/discovery-state.json`);
   const profiles = (await loadInput(targetsPath)).map(normalizeTargetProfile);
-  const rows = (await loadInput(rowsPath)).map((row, index) => normalizeDiscoveryRow(row, index, args.date));
+  const rows = prepareOnly ? [] : (await loadInput(rowsPath)).map((row, index) => normalizeDiscoveryRow(row, index, args.date));
   if (!profiles.length) throw new Error("At least one target profile is required.");
-  if (!rows.length) throw new Error("At least one approved source row is required.");
+  if (!prepareOnly && !rows.length) throw new Error("At least one approved source row is required.");
 
   const queryPlan = buildTargetQueryPlan(profiles, args.date);
   const worksheetRows = buildAnalystSearchWorksheet(queryPlan);
   const rowTemplate = buildApprovedSourceRowTemplate(args.date);
-  const clusters = clusterRows(rows, profiles, previousState, args.date);
+  const clusters = prepareOnly ? [] : clusterRows(rows, profiles, previousState, args.date);
   const reviewQueue = buildHumanReviewQueue(clusters, profiles, args.date);
-  const nextState = buildNextState(clusters, previousState, args.date);
-  const summary = buildSummary(profiles, rows, clusters, args.date, stateOutPath, worksheetRows);
+  const nextState = prepareOnly ? null : buildNextState(clusters, previousState, args.date);
+  const summary = buildSummary(profiles, rows, clusters, args.date, stateOutPath, worksheetRows, prepareOnly ? "prepare-only" : "score-rows");
 
   await writeJson(`${outputDir}/daily-query-plan.json`, queryPlan);
   await writeFile(
@@ -686,10 +693,13 @@ async function main() {
   await writeJson(`${outputDir}/candidate-clusters.json`, clusters);
   await writeJson(`${outputDir}/human-review-queue.json`, reviewQueue);
   await writeJson(`${outputDir}/daily-summary.json`, summary);
-  await writeJson(stateOutPath, nextState);
+  if (!prepareOnly) {
+    await writeJson(stateOutPath, nextState);
+  }
 
   console.log(JSON.stringify({
     status: "ok",
+    mode: summary.mode,
     outputDir,
     runDate: args.date,
     targetsSearched: summary.targetsSearched,

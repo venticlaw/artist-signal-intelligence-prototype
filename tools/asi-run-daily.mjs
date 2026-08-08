@@ -14,14 +14,16 @@ function usage() {
     "",
     "Inputs:",
     "  --targets JSON array or object with profiles[]",
-    "  --rows    Today's approved/manual source rows as JSON or CSV",
+    "  --rows    Optional approved/manual source rows as JSON or CSV",
     "  --runs    Root folder for date-stamped daily run folders",
     "  --date    Optional YYYY-MM-DD run date, defaults to today",
+    "  --prepare-only Force worksheet-only preparation even if no source rows exist",
     "",
     "Behavior:",
     "  - Writes today's packet to <runs>/<date>/",
     "  - Uses <runs>/<previous-date>/discovery-state.json when present",
     "  - Writes <runs>/latest-run.json for local handoff",
+    "  - If --rows is omitted, generates a search-prep packet only",
     "  - Does not collect data, scrape, authenticate, publish, or contact anyone"
   ].join("\n");
 }
@@ -33,6 +35,10 @@ function parseArgs(argv) {
     const value = argv[index + 1];
     if (key === "--help" || key === "-h") {
       args.help = true;
+      continue;
+    }
+    if (key === "--prepare-only") {
+      args["prepare-only"] = true;
       continue;
     }
     if (!key.startsWith("--")) throw new Error(`Unexpected argument: ${key}`);
@@ -95,31 +101,35 @@ async function main() {
     console.log(usage());
     return;
   }
-  if (!args.targets || !args.rows || !args.runs) {
+  if (!args.targets || !args.runs) {
     throw new Error(`Missing required arguments.\n\n${usage()}`);
   }
   if (!validDate(args.date)) throw new Error("--date must be YYYY-MM-DD.");
 
   const cwd = resolve(new URL("..", import.meta.url).pathname);
   const targetsPath = resolve(args.targets);
-  const rowsPath = resolve(args.rows);
+  const rowsPath = args.rows ? resolve(args.rows) : null;
+  const prepareOnly = Boolean(args["prepare-only"] || !rowsPath);
   const runsRoot = resolve(args.runs);
   const runDir = resolve(runsRoot, args.date);
   const priorDate = previousDate(args.date);
   const priorStatePath = resolve(runsRoot, priorDate, "discovery-state.json");
-  const stateOutPath = resolve(runDir, "discovery-state.json");
-  const hasPriorState = await exists(priorStatePath);
+  const stateOutPath = prepareOnly ? null : resolve(runDir, "discovery-state.json");
+  const hasPriorState = !prepareOnly && await exists(priorStatePath);
 
   await mkdir(runDir, { recursive: true });
 
   const discoveryArgs = [
     "tools/asi-daily-discovery.mjs",
     "--targets", targetsPath,
-    "--rows", rowsPath,
     "--out", runDir,
-    "--date", args.date,
-    "--state-out", stateOutPath
+    "--date", args.date
   ];
+  if (prepareOnly) {
+    discoveryArgs.push("--prepare-only");
+  } else {
+    discoveryArgs.push("--rows", rowsPath, "--state-out", stateOutPath);
+  }
   if (hasPriorState) {
     discoveryArgs.push("--state", priorStatePath);
   }
@@ -128,6 +138,7 @@ async function main() {
   const summary = JSON.parse(await readFile(resolve(runDir, "daily-summary.json"), "utf8"));
   const latestRun = {
     status: "asi-local-daily-run",
+    mode: prepareOnly ? "prepare-only" : "score-rows",
     runDate: args.date,
     runDir,
     targetsPath,
@@ -146,6 +157,7 @@ async function main() {
   await writeJson(resolve(runsRoot, "latest-run.json"), latestRun);
   console.log(JSON.stringify({
     status: "ok",
+    mode: latestRun.mode,
     runDate: args.date,
     runDir,
     priorStateUsed: hasPriorState,

@@ -50,6 +50,17 @@ Daily runner with automatic prior-state carry-forward:
 ```bash
 node tools/asi-run-daily.mjs \
   --targets data/sample-target-profiles.json \
+  --runs /private/tmp/asi-runner-runs \
+  --date 2026-08-08
+```
+
+When `--rows` is omitted, the runner creates a preparation packet only: query plan, analyst worksheet, row template, empty normalized rows, empty clusters, empty review queue, summary, and latest-run handoff.
+
+Scoring run after approved rows are captured:
+
+```bash
+node tools/asi-run-daily.mjs \
+  --targets data/sample-target-profiles.json \
   --rows data/sample-daily-source-rows.json \
   --runs /private/tmp/asi-runner-runs \
   --date 2026-08-08
@@ -75,6 +86,16 @@ node tools/asi-daily-discovery.mjs \
   --rows data/sample-daily-source-rows.json \
   --out /private/tmp/asi-daily-discovery-sample \
   --date 2026-08-08
+```
+
+Worksheet-only preparation can also run directly:
+
+```bash
+node tools/asi-daily-discovery.mjs \
+  --targets data/sample-target-profiles.json \
+  --out /private/tmp/asi-prepare-only-direct \
+  --date 2026-08-10 \
+  --prepare-only
 ```
 
 Follow-up run with yesterday's state:
