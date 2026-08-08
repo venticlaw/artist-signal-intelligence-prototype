@@ -22,6 +22,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Local source-row normalizer for turning approved TikTok/API/vendor/manual exports into the ASI daily row contract.
 - Local daily discovery packet generator for turning target profiles plus approved rows into daily query, cluster, queue, and summary JSON artifacts.
 - Local review-queue converter for turning human-approved candidates into private dashboard import packets.
+- Local workflow runner that chains target intake, approved export normalization, daily scoring, and optional private import conversion into one date-stamped run manifest.
 - Strict private JSON import for manually reviewed public evidence.
 - Approval gate view for blocked actions.
 
@@ -39,6 +40,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Target Discovery does not run live collection; it turns pasted target profiles and approved daily source rows into a local review queue.
 - Source-row normalization reads local approved/manual exports only; it does not fetch TikTok, authenticate, scrape, enrich, or store credentials.
 - Review-queue conversion promotes only human-approved local candidates and keeps output as `publicationApproval: not-approved`.
+- Workflow runs are local manifests only. They do not schedule, fetch, scrape, authenticate, sync, publish, or contact anyone.
 - Any TikTok or licensed-provider API credentials must live in a private server-side connector, never in GitHub Pages, repo files, browser JavaScript, or static JSON.
 - Approval-gated actions are displayed as blocked actions, not active controls.
 
@@ -49,6 +51,32 @@ Serve the repository root or this folder with a static file server and open `ind
 ## Daily Discovery Packet
 
 The local CLI creates the daily artifacts that make target-based discovery repeatable. It reads only local target profiles and approved/manual source rows.
+
+One-command morning preparation:
+
+```bash
+node tools/asi-run-workflow.mjs \
+  --target-intake data/sample-target-intake.csv \
+  --runs /private/tmp/asi-workflow-runs \
+  --date 2026-08-14
+```
+
+One-command scoring and private packet conversion after approved exports and human review are available:
+
+```bash
+node tools/asi-run-workflow.mjs \
+  --targets data/sample-target-profiles.json \
+  --source-export data/sample-tiktok-approved-export.json \
+  --target-id northline-vale \
+  --query-orbit genre-scene \
+  --query-seed altrap \
+  --reviewed-queue data/sample-human-reviewed-queue.json \
+  --runs /private/tmp/asi-workflow-runs \
+  --date 2026-08-13 \
+  --analyst ASI
+```
+
+The workflow writes `workflow-manifest.json` inside the date-stamped run folder and `latest-workflow.json` at the run root.
 
 Build normalized target profiles from A&R target intake:
 
