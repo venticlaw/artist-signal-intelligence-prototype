@@ -7,7 +7,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 
 ## MVP Surface
 
-- Buyer-mode watchlist with search, confidence filter, minimum buyer-fit filter, and sorting.
+- Label A&R prospect desk with genre-lane filtering, queue metrics, active prospect review, search, confidence filter, minimum buyer-fit filter, and sorting.
 - Artist brief with scene/community context, risks, and buyer-fit stats.
 - Source-separated evidence with source labels, observed dates, source URL handling, freshness, and confidence.
 - Scoring model view with weighted buyer-fit rationale and strongest/weakest dimensions.

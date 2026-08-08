@@ -8,17 +8,19 @@
       content="Artist Signal Intelligence static prototype for public-safe A&R signal review."
     />
     <title>Artist Signal Intelligence Prototype</title>
-    <link rel="stylesheet" href="./styles.css?v=20260808-api-connector" />
+    <link rel="stylesheet" href="./styles.css?v=20260808-ar-desk" />
   </head>
   <body>
     <header class="topbar">
       <div>
-        <p class="eyebrow">ASI prototype / fictional data</p>
-        <h1>Artist Signal Intelligence</h1>
+        <p class="eyebrow">Artist Signal Intelligence / Label A&amp;R</p>
+        <h1>A&amp;R Prospect Desk</h1>
+        <p class="topbar-copy">Scan a genre lane, pressure-test the signal, and decide what deserves deeper human review.</p>
       </div>
       <div class="status-stack" aria-label="Prototype status">
-        <span class="status-pill">Static GitHub Pages build</span>
-        <span class="status-pill gate">Approval-gated data</span>
+        <span class="status-pill">Prospect review mode</span>
+        <span class="status-pill">Fictional demo data</span>
+        <span class="status-pill gate">No outreach</span>
       </div>
     </header>
 
@@ -31,7 +33,7 @@
         <div class="mode-summary" id="modeSummary"></div>
         <div class="safety-callout">
           <strong>Public-safe mode:</strong>
-          fictional artists, local fixtures, no live collection, no outreach, no backend.
+          fictional prospects, local fixtures, no live collection, no outreach, no backend.
         </div>
       </section>
 
@@ -55,15 +57,31 @@
       <section class="tab-panel is-active" id="watchlist" aria-labelledby="watchlist-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Private watchlist simulation</p>
-            <h2 id="watchlist-title">Fictional artist queue</h2>
+            <p class="eyebrow">Prospect command center</p>
+            <h2 id="watchlist-title">Genre-lane review queue</h2>
           </div>
           <div class="queue-summary" id="queueSummary"></div>
         </div>
+        <div class="workflow-strip" aria-label="A&amp;R review workflow">
+          <span>1. Pick genre lane</span>
+          <span>2. Sort by buyer fit</span>
+          <span>3. Open evidence</span>
+          <span>4. Save A&amp;R decision</span>
+        </div>
         <div class="filter-bar" aria-label="Watchlist filters">
           <label>
-            Search
-            <input id="searchInput" type="search" placeholder="Name, scene, signal, risk" />
+            Prospect search
+            <input id="searchInput" type="search" placeholder="Name, scene, signal, risk, strategy" />
+          </label>
+          <label>
+            Genre lane
+            <select id="genreFilter">
+              <option value="all">All genre lanes</option>
+              <option value="Alt-R&B">Alt-R&B</option>
+              <option value="Rap / Pop">Rap / Pop</option>
+              <option value="Indie Rock">Indie Rock</option>
+              <option value="Bedroom Pop">Bedroom Pop</option>
+            </select>
           </label>
           <label>
             Confidence
@@ -89,7 +107,10 @@
             </select>
           </label>
         </div>
-        <div class="watchlist-grid" id="watchlistGrid"></div>
+        <div class="prospect-desk">
+          <div class="watchlist-grid" id="watchlistGrid"></div>
+          <aside class="active-prospect-panel" id="activeProspectPanel"></aside>
+        </div>
       </section>
 
       <section class="tab-panel" id="brief" aria-labelledby="brief-title">
@@ -392,6 +413,6 @@
       <span>Fictional fixtures only.</span>
     </footer>
 
-    <script src="./app.js?v=20260808-api-connector"></script>
+    <script src="./app.js?v=20260808-ar-desk"></script>
   </body>
 </html>

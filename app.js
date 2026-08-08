@@ -6,6 +6,7 @@ const state = {
   dataSourceLabel: "Fictional fixtures",
   filters: {
     search: "",
+    genre: "all",
     confidence: "all",
     minimumFit: 0,
     sort: "buyerFit"
@@ -45,6 +46,7 @@ const $ = (selector) => document.querySelector(selector);
 const confidenceLabels = ["High", "Medium", "Low", "Insufficient"];
 const sourceLabels = ["Observed", "Reported by artist/team", "Third-party public source", "Estimated", "Unknown"];
 const confidenceRank = { High: 4, Medium: 3, Low: 2, Insufficient: 1 };
+const genreLanes = ["Alt-R&B", "Rap / Pop", "Indie Rock", "Bedroom Pop"];
 
 const discoverySampleRows = [
   {
@@ -239,16 +241,38 @@ function artistSearchText(artist) {
   ].join(" ").toLowerCase();
 }
 
+function prospectGenre(artist) {
+  const text = artistSearchText(artist);
+  if (text.includes("alt-r&b") || text.includes("alt rnb") || text.includes("r&b")) return "Alt-R&B";
+  if (text.includes("rap") || text.includes("creator-led") || text.includes("crossover")) return "Rap / Pop";
+  if (text.includes("indie-rock") || text.includes("indie rock") || text.includes("college-radio")) return "Indie Rock";
+  if (text.includes("bedroom pop")) return "Bedroom Pop";
+  return "Unmapped";
+}
+
+function prospectPriority(artist, mode) {
+  const fit = weightedScore(artist, mode);
+  if (artist.confidence === "High" && fit >= 58) return "Shortlist";
+  if (fit >= 55) return "Deep review";
+  if (fit >= 42) return "Watch";
+  return "Hold";
+}
+
+function topSignal(artist) {
+  return artist.signals?.[0]?.detail || artist.summary;
+}
+
 function filteredArtists() {
   const mode = getMode();
   const query = state.filters.search.trim().toLowerCase();
   return [...state.data.artists]
     .filter((artist) => {
       const fit = weightedScore(artist, mode);
+      const genreMatch = state.filters.genre === "all" || prospectGenre(artist) === state.filters.genre;
       const confidenceMatch = state.filters.confidence === "all" || artist.confidence === state.filters.confidence;
       const fitMatch = fit >= state.filters.minimumFit;
       const searchMatch = !query || artistSearchText(artist).includes(query);
-      return confidenceMatch && fitMatch && searchMatch;
+      return genreMatch && confidenceMatch && fitMatch && searchMatch;
     })
     .sort((a, b) => {
       if (state.filters.sort === "baseScore") return baseScore(b) - baseScore(a);
@@ -301,6 +325,11 @@ function bindWatchlistControls() {
     renderAll();
   });
 
+  $("#genreFilter").addEventListener("change", (event) => {
+    state.filters.genre = event.target.value;
+    renderAll();
+  });
+
   $("#confidenceFilter").addEventListener("change", (event) => {
     state.filters.confidence = event.target.value;
     renderAll();
@@ -334,8 +363,12 @@ function renderWatchlist() {
   const total = state.data.artists.length;
   const highConfidence = artists.filter((artist) => artist.confidence === "High").length;
   const bestFit = artists[0] ? weightedScore(artists[0], mode) : 0;
+  const shortlisted = artists.filter((artist) => prospectPriority(artist, mode) === "Shortlist").length;
+  const activeGenre = state.filters.genre === "all" ? "All lanes" : state.filters.genre;
   $("#queueSummary").innerHTML = `
-    <span>${artists.length}/${total} visible</span>
+    <span>${escapeHtml(activeGenre)}</span>
+    <span>${artists.length}/${total} prospects</span>
+    <span>${shortlisted} shortlist-ready</span>
     <span>${highConfidence} high confidence</span>
     <span>Top fit ${bestFit}</span>
   `;
@@ -345,16 +378,23 @@ function renderWatchlist() {
     .map((artist) => {
       const fit = weightedScore(artist, mode);
       const base = baseScore(artist);
+      const genre = prospectGenre(artist);
+      const priority = prospectPriority(artist, mode);
       return `
         <article class="artist-card ${artist.id === state.activeArtistId ? "is-active" : ""}" data-artist-id="${escapeHtml(artist.id)}" tabindex="0">
           <div class="card-topline">
             <div>
-              <p class="eyebrow">${escapeHtml(recordLabel())}</p>
+              <p class="eyebrow">${escapeHtml(genre)} lane</p>
               <h3>${escapeHtml(artist.name)}</h3>
             </div>
             <div class="score-badge">${fit}</div>
           </div>
-          <p class="summary">${escapeHtml(artist.summary)}</p>
+          <div class="tag-row no-margin">
+            <span class="tag">${escapeHtml(priority)}</span>
+            <span class="tag">${escapeHtml(recordLabel())}</span>
+            <span class="tag">${artist.signals?.length || 0} signals</span>
+          </div>
+          <p class="summary">${escapeHtml(topSignal(artist))}</p>
           <div class="signal-strip">
             <div class="score-row">
               <span class="mini-label">Base score</span>
@@ -370,7 +410,7 @@ function renderWatchlist() {
             </div>
           </div>
           <div>
-            <span class="mini-label">Recommended next action</span>
+            <span class="mini-label">A&R next move</span>
             <p>${escapeHtml(artist.recommendation)}</p>
           </div>
         </article>
@@ -396,6 +436,59 @@ function renderWatchlist() {
         event.preventDefault();
         selectArtist();
       }
+    });
+  });
+  renderActiveProspectPanel(artists);
+}
+
+function renderActiveProspectPanel(visibleArtists) {
+  const artist = getArtist();
+  const mode = getMode();
+  if (!artist) {
+    $("#activeProspectPanel").innerHTML = "";
+    return;
+  }
+  const fit = weightedScore(artist, mode);
+  const genre = prospectGenre(artist);
+  const priority = prospectPriority(artist, mode);
+  const rank = visibleArtists.findIndex((item) => item.id === artist.id) + 1;
+  $("#activeProspectPanel").innerHTML = `
+    <div class="sticky-review">
+      <p class="eyebrow">Active prospect</p>
+      <div class="active-prospect-head">
+        <div>
+          <h3>${escapeHtml(artist.name)}</h3>
+          <p class="summary">${escapeHtml(genre)} / ${escapeHtml(mode.label)}</p>
+        </div>
+        <div class="score-badge large">${fit}</div>
+      </div>
+      <div class="decision-grid">
+        <div class="stat"><span class="mini-label">Queue rank</span><strong>${rank > 0 ? rank : "Filtered"}</strong></div>
+        <div class="stat"><span class="mini-label">Decision</span><strong>${escapeHtml(priority)}</strong></div>
+        <div class="stat"><span class="mini-label">Confidence</span><strong>${escapeHtml(artist.confidence)}</strong></div>
+        <div class="stat"><span class="mini-label">Evidence</span><strong>${artist.signals?.length || 0}</strong></div>
+      </div>
+      <h3>Why A&R should care</h3>
+      <p>${escapeHtml(artist.summary)}</p>
+      <h3>Proof to check first</h3>
+      <p class="summary">${escapeHtml(topSignal(artist))}</p>
+      <h3>Before any move</h3>
+      <ul class="check-list compact-list">
+        <li>Confirm artist identity and catalog match.</li>
+        <li>Review source URLs and confidence labels.</li>
+        <li>Save pass/shortlist reason in A&R Notes.</li>
+        <li>No outreach from this prototype.</li>
+      </ul>
+      <div class="button-row">
+        <button class="secondary-button panel-action" type="button" data-jump-tab="brief">Open brief</button>
+        <button class="secondary-button panel-action" type="button" data-jump-tab="evidence">Check evidence</button>
+        <button class="panel-action" type="button" data-jump-tab="notes">Add note</button>
+      </div>
+    </div>
+  `;
+  document.querySelectorAll(".panel-action").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelector(`[data-tab="${button.dataset.jumpTab}"]`)?.click();
     });
   });
 }
