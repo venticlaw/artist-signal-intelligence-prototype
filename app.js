@@ -13,7 +13,8 @@ const state = {
   questionnairePacket: "",
   discovery: {
     candidates: [],
-    packet: null
+    packet: null,
+    apiPacket: null
   }
 };
 
@@ -892,13 +893,113 @@ function discoveryScores(candidate) {
   };
 }
 
+function selectedApiProvider() {
+  const provider = $("#apiProviderInput")?.value || "approved-provider";
+  const labels = {
+    "approved-provider": "Approved commercial provider or licensed API",
+    "tiktok-research-api": "TikTok Research API, only if eligible and approved",
+    "manual-analyst-export": "Manual analyst export from approved source"
+  };
+  return {
+    id: provider,
+    label: labels[provider] || labels["approved-provider"]
+  };
+}
+
+function buildApiConnectorPacket() {
+  const createdAt = new Date().toISOString().slice(0, 10);
+  const provider = selectedApiProvider();
+  const seeds = $("#discoverySeedsInput").value.split(/[\n,]+/).map((seed) => seed.trim()).filter(Boolean);
+  const objective = $("#discoveryObjectiveInput").value.trim() || "Find emerging artist candidates from TikTok-style public video results.";
+  const connectorStatus = provider.id === "tiktok-research-api"
+    ? "blocked-until-eligibility-and-project-approval"
+    : provider.id === "manual-analyst-export"
+      ? "manual-approved-source"
+      : "requires-approved-commercial-data-provider";
+
+  return {
+    status: "api-adapter-plan",
+    lane: "ASI",
+    createdAt,
+    provider: provider.label,
+    connectorStatus,
+    frontendPolicy: "Static GitHub Pages must never store or call with API keys, OAuth tokens, cookies, or client secrets.",
+    serverSideOnly: true,
+    objective,
+    seedTerms: seeds,
+    allowedQueryFields: [
+      "keyword",
+      "hashtag_name",
+      "username",
+      "music_id",
+      "region_code",
+      "create_date",
+      "video_id"
+    ],
+    requestedVideoFields: [
+      "id",
+      "video_description",
+      "create_time",
+      "region_code",
+      "share_count",
+      "view_count",
+      "like_count",
+      "comment_count",
+      "music_id",
+      "hashtag_names",
+      "username"
+    ],
+    normalizedRowContract: {
+      handle: "string, TikTok username with @ prefix when available",
+      displayName: "string, same as handle until artist identity is manually validated",
+      caption: "string, source video description",
+      url: "https URL when permitted by source, otherwise Unknown",
+      soundTitle: "string or music_id context",
+      hashtags: "comma-separated hashtag names",
+      region: "region_code or Unknown",
+      observedDate: "YYYY-MM-DD query/import date",
+      views: "number",
+      likes: "number",
+      comments: "number",
+      shares: "number"
+    },
+    serverEndpointDraft: {
+      method: "POST",
+      path: "/api/asi/tiktok-discovery/query",
+      auth: "private operator auth required",
+      body: {
+        objective,
+        seeds,
+        filters: {
+          region_code: "US",
+          create_date_gte: "YYYYMMDD",
+          create_date_lte: "YYYYMMDD",
+          max_records: 100
+        }
+      },
+      response: {
+        status: "ok",
+        rows: ["NormalizedRowContract[]"],
+        sourceMeta: {
+          provider: provider.label,
+          fetchedAt: "ISO-8601 timestamp",
+          approvalReference: "internal approval or vendor contract id"
+        }
+      }
+    },
+    reviewGate: "Every API result must land in candidate review before private dashboard import. No outreach, public ranking, lead capture, or publishing."
+  };
+}
+
 function buildDiscoveryQueryPlan() {
   const objective = $("#discoveryObjectiveInput").value.trim() || "Find emerging artists from approved TikTok result rows.";
   const seeds = $("#discoverySeedsInput").value.split(/[\n,]+/).map((seed) => seed.trim()).filter(Boolean);
+  const provider = selectedApiProvider();
   return [
     `# TikTok Discovery Query Plan`,
     ``,
     `Status: No live calls from this prototype`,
+    `Data path: ${provider.label}`,
     `Objective: ${objective}`,
     ``,
     `## Seed Terms`,
@@ -910,7 +1011,11 @@ function buildDiscoveryQueryPlan() {
     `- username`,
     `- music_id`,
     `- region_code`,
-    `- start_date / end_date`,
+    `- create_date / date range`,
+    `- video_id`,
+    ``,
+    `## Server-Side API Rule`,
+    `The GitHub Pages app cannot hold credentials. A private backend adapter must call the approved API/vendor, normalize rows, and return only the fields this workbench accepts.`,
     ``,
     `## Review Rule`,
     `Use only approved API/vendor/manual rows. Do not scrape, login-scrape, automate browser extraction, or publish real-artist rankings.`
@@ -982,6 +1087,8 @@ function buildDiscoveryPacket(candidates) {
 }
 
 function renderDiscoveryWorkbench() {
+  state.discovery.apiPacket = buildApiConnectorPacket();
+  $("#apiPacketPreview").textContent = JSON.stringify(state.discovery.apiPacket, null, 2);
   $("#queryPlanPreview").textContent = buildDiscoveryQueryPlan();
   const candidates = state.discovery.candidates;
   $("#candidateList").innerHTML = candidates.length
@@ -1390,6 +1497,7 @@ function bindQuestionnaireForm() {
 }
 
 function bindDiscoveryForm() {
+  $("#apiProviderInput").addEventListener("change", renderDiscoveryWorkbench);
   $("#discoveryObjectiveInput").addEventListener("input", renderDiscoveryWorkbench);
   $("#discoverySeedsInput").addEventListener("input", renderDiscoveryWorkbench);
 
@@ -1400,6 +1508,7 @@ function bindDiscoveryForm() {
     $("#discoveryStatus").textContent = "Inserted fictional sample rows. Replace with approved/manual data before private analysis.";
     state.discovery.candidates = [];
     state.discovery.packet = null;
+    state.discovery.apiPacket = buildApiConnectorPacket();
     renderDiscoveryWorkbench();
   });
 
@@ -1426,6 +1535,20 @@ function bindDiscoveryForm() {
       }
       await navigator.clipboard.writeText(JSON.stringify(state.discovery.packet, null, 2));
       $("#discoveryStatus").textContent = "Copied ASI private import packet. Keep real candidates private.";
+    } catch (error) {
+      $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
+    }
+  });
+
+  $("#copyApiPacketButton").addEventListener("click", async () => {
+    try {
+      const packet = buildApiConnectorPacket();
+      if (!navigator.clipboard?.writeText) {
+        $("#discoveryStatus").textContent = "Copy is unavailable in this browser. Select the API packet manually.";
+        return;
+      }
+      await navigator.clipboard.writeText(JSON.stringify(packet, null, 2));
+      $("#discoveryStatus").textContent = "Copied API connector packet. Credentials still belong on a private server only.";
     } catch (error) {
       $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
     }

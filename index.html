@@ -8,7 +8,7 @@
       content="Artist Signal Intelligence static prototype for public-safe A&R signal review."
     />
     <title>Artist Signal Intelligence Prototype</title>
-    <link rel="stylesheet" href="./styles.css?v=20260808-discovery-workbench" />
+    <link rel="stylesheet" href="./styles.css?v=20260808-api-connector" />
   </head>
   <body>
     <header class="topbar">
@@ -278,11 +278,20 @@
           </div>
           <div class="export-actions" aria-label="Discovery packet controls">
             <button class="secondary-button" type="button" id="sampleDiscoveryButton">Insert sample rows</button>
+            <button class="secondary-button" type="button" id="copyApiPacketButton">Copy API Packet</button>
             <button type="button" id="copyDiscoveryPacketButton">Copy ASI Packet</button>
           </div>
         </div>
         <div class="discovery-grid">
           <form class="import-panel" id="discoveryForm">
+            <label>
+              Approved data path
+              <select id="apiProviderInput">
+                <option value="approved-provider">Approved commercial provider or licensed API</option>
+                <option value="tiktok-research-api">TikTok Research API, only if eligible and approved</option>
+                <option value="manual-analyst-export">Manual analyst export from approved source</option>
+              </select>
+            </label>
             <label>
               Discovery objective
               <input id="discoveryObjectiveInput" type="search" placeholder="Find unsigned alt-R&B artists gaining early creator pull" />
@@ -302,6 +311,18 @@
             <p class="import-status" id="discoveryStatus">No live TikTok calls run here. Paste only approved/manual results.</p>
           </form>
           <div class="discovery-results">
+            <article class="detail-panel api-panel">
+              <div>
+                <p class="eyebrow">Server-side connector</p>
+                <h3>API adapter contract</h3>
+              </div>
+              <ul class="check-list compact-list">
+                <li>Credentials stay on a private server, never in GitHub Pages.</li>
+                <li>Adapter returns normalized rows into this workbench shape.</li>
+                <li>Human review stays required before dashboard import.</li>
+              </ul>
+              <pre class="schema-box" id="apiPacketPreview"></pre>
+            </article>
             <article class="detail-panel">
               <h3>Query plan</h3>
               <pre class="schema-box" id="queryPlanPreview"></pre>
@@ -371,6 +392,6 @@
       <span>Fictional fixtures only.</span>
     </footer>
 
-    <script src="./app.js?v=20260808-discovery-workbench"></script>
+    <script src="./app.js?v=20260808-api-connector"></script>
   </body>
 </html>

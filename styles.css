@@ -393,6 +393,15 @@ input[type="number"] {
   gap: 14px;
 }
 
+.api-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.compact-list {
+  margin: 0;
+}
+
 .detail-panel {
   padding: 18px;
 }
