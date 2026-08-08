@@ -18,6 +18,7 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 - Buyer requirements questionnaire with browser-local packet copy/download.
 - Target Discovery workbench for daily target-artist query plans, approved source rows, surge scoring, and human review queues.
 - TikTok Discovery Workbench for query planning, API adapter packet generation, approved/manual result-row clustering, and ASI private packet generation.
+- Local daily discovery packet generator for turning target profiles plus approved rows into daily query, cluster, queue, and summary JSON artifacts.
 - Strict private JSON import for manually reviewed public evidence.
 - Approval gate view for blocked actions.
 
@@ -39,6 +40,28 @@ This prototype is a fictional-data A&R research dashboard for the Artist Signal 
 ## Local Run
 
 Serve the repository root or this folder with a static file server and open `index.html`.
+
+## Daily Discovery Packet
+
+The local CLI creates the daily artifacts that make target-based discovery repeatable. It reads only local target profiles and approved/manual source rows.
+
+```bash
+node tools/asi-daily-discovery.mjs \
+  --targets data/sample-target-profiles.json \
+  --rows data/sample-daily-source-rows.json \
+  --out /private/tmp/asi-daily-discovery-sample \
+  --date 2026-08-08
+```
+
+Outputs:
+
+- `daily-query-plan.json`
+- `normalized-source-rows.json`
+- `candidate-clusters.json`
+- `human-review-queue.json`
+- `daily-summary.json`
+
+The CLI does not call TikTok, scrape, authenticate, store credentials, or publish results.
 
 ## Source Of Truth
 

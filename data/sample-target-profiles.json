@@ -1,0 +1,14 @@
+[
+  {
+    "targetId": "northline-vale",
+    "name": "Northline Vale",
+    "priority": "high",
+    "genreLane": "Alternative hip-hop / rap",
+    "regionFocus": ["US", "Mid-Atlantic", "college towns", "secondary markets"],
+    "similarArtists": ["Artist Alpha", "Artist Beta", "Artist Gamma", "Artist Delta"],
+    "soundSeeds": ["distorted drums", "left-field rap", "melodic rage", "DIY videos", "underground rap"],
+    "hashtagSeeds": ["altrap", "undergroundrap", "newartist", "originalsound", "raptok"],
+    "exclude": ["major-label established acts", "non-artist creator accounts", "fan pages", "repost-only accounts", "parody-only accounts"],
+    "reviewGoal": "Find adjacent emerging artists with similar audience behavior, sound palette, or scene/community context."
+  }
+]
