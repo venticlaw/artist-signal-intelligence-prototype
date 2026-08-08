@@ -5,39 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Artist Signal Intelligence static prototype for public-safe A&R signal review."
+      content="A&R prospect review dashboard."
     />
-    <title>Artist Signal Intelligence Prototype</title>
-    <link rel="stylesheet" href="./styles.css?v=20260808-ar-desk" />
+    <title>A&R Prospect Desk</title>
+    <link rel="stylesheet" href="./styles.css?v=20260808-live-cleanup" />
   </head>
   <body>
     <header class="topbar">
       <div>
         <p class="eyebrow">Artist Signal Intelligence / Label A&amp;R</p>
         <h1>A&amp;R Prospect Desk</h1>
-        <p class="topbar-copy">Scan a genre lane, pressure-test the signal, and decide what deserves deeper human review.</p>
       </div>
-      <div class="status-stack" aria-label="Prototype status">
-        <span class="status-pill">Prospect review mode</span>
-        <span class="status-pill">Fictional demo data</span>
-        <span class="status-pill gate">No outreach</span>
+      <div class="status-stack" aria-label="Desk status">
+        <span class="status-pill">Review queue</span>
+        <span class="status-pill">Source labels</span>
+        <span class="status-pill gate">No outbound</span>
       </div>
     </header>
 
     <main class="app-shell">
-      <section class="control-band" aria-label="Buyer mode and safety summary">
+      <section class="control-band" aria-label="Buyer mode and session summary">
         <div class="mode-control">
           <label for="buyerMode">Buyer lens</label>
           <select id="buyerMode"></select>
         </div>
         <div class="mode-summary" id="modeSummary"></div>
         <div class="safety-callout">
-          <strong>Public-safe mode:</strong>
-          fictional prospects, local fixtures, no live collection, no outreach, no backend.
+          <strong>Session state:</strong>
+          local dataset, local notes, no outbound actions.
         </div>
       </section>
 
-      <nav class="tabs" aria-label="Prototype views">
+      <nav class="tabs" aria-label="Dashboard views">
         <button class="tab is-active" type="button" data-tab="watchlist">Watchlist</button>
         <button class="tab" type="button" data-tab="brief">Artist Brief</button>
         <button class="tab" type="button" data-tab="timeline">Timeline / Network</button>
@@ -47,17 +46,17 @@
         <button class="tab" type="button" data-tab="notes">A&R Notes</button>
         <button class="tab" type="button" data-tab="learning">Learning Review</button>
         <button class="tab" type="button" data-tab="strategy">Strategy</button>
-        <button class="tab" type="button" data-tab="report">Report Preview</button>
-        <button class="tab" type="button" data-tab="questionnaire">Questionnaire</button>
+        <button class="tab" type="button" data-tab="report">Report</button>
+        <button class="tab" type="button" data-tab="questionnaire">Requirements</button>
         <button class="tab" type="button" data-tab="discovery">TikTok Discovery</button>
-        <button class="tab" type="button" data-tab="import">Private Import</button>
-        <button class="tab" type="button" data-tab="gates">Approval Gates</button>
+        <button class="tab" type="button" data-tab="import">Local Import</button>
+        <button class="tab" type="button" data-tab="gates">Controls</button>
       </nav>
 
       <section class="tab-panel is-active" id="watchlist" aria-labelledby="watchlist-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Prospect command center</p>
+            <p class="eyebrow">Prospect desk</p>
             <h2 id="watchlist-title">Genre-lane review queue</h2>
           </div>
           <div class="queue-summary" id="queueSummary"></div>
@@ -130,7 +129,7 @@
             <p class="eyebrow">Granular intelligence</p>
             <h2 id="timeline-title">Timeline and network context</h2>
           </div>
-          <span class="status-pill">Manual public evidence only</span>
+          <span class="status-pill">Source labeled</span>
         </div>
         <div class="timeline-layout">
           <div class="timeline-list" id="timelineList"></div>
@@ -196,7 +195,7 @@
               Human learning note
               <textarea id="noteInput" rows="5" maxlength="420"></textarea>
             </label>
-            <p class="import-status">Notes save to this browser only and may remain on this machine. Do not enter private notes on a shared device.</p>
+            <p class="import-status">Notes save to this browser session.</p>
             <button type="submit">Save local note</button>
           </form>
           <div class="detail-panel" id="savedNote"></div>
@@ -228,23 +227,23 @@
       <section class="tab-panel" id="report" aria-labelledby="report-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Browser-local packet</p>
-            <h2 id="report-title">Scouting report preview</h2>
+            <p class="eyebrow">Scouting packet</p>
+            <h2 id="report-title">Report preview</h2>
           </div>
           <div class="export-actions" aria-label="Report export controls">
             <button class="secondary-button" type="button" id="copyReportButton">Copy Markdown</button>
             <button type="button" id="downloadReportButton">Download Markdown</button>
           </div>
         </div>
-        <p class="export-status" id="exportStatus">Exports are generated in this browser only. Private imports still require separate approval before publication.</p>
+        <p class="export-status" id="exportStatus">Exports are generated in this browser session.</p>
         <pre class="report-box" id="reportPreview"></pre>
       </section>
 
       <section class="tab-panel" id="questionnaire" aria-labelledby="questionnaire-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Pre-build configuration</p>
-            <h2 id="questionnaire-title">Buyer requirements questionnaire</h2>
+            <p class="eyebrow">Buyer configuration</p>
+            <h2 id="questionnaire-title">Requirements</h2>
           </div>
           <div class="export-actions" aria-label="Questionnaire export controls">
             <button class="secondary-button" type="button" id="copyQuestionnaireButton">Copy Packet</button>
@@ -294,13 +293,13 @@
       <section class="tab-panel" id="discovery" aria-labelledby="discovery-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Approved-source discovery</p>
-            <h2 id="discovery-title">TikTok discovery workbench</h2>
+            <p class="eyebrow">Discovery intake</p>
+            <h2 id="discovery-title">TikTok discovery</h2>
           </div>
           <div class="export-actions" aria-label="Discovery packet controls">
             <button class="secondary-button" type="button" id="sampleDiscoveryButton">Insert sample rows</button>
             <button class="secondary-button" type="button" id="copyApiPacketButton">Copy API Packet</button>
-            <button type="button" id="copyDiscoveryPacketButton">Copy ASI Packet</button>
+            <button type="button" id="copyDiscoveryPacketButton">Copy Review Packet</button>
           </div>
         </div>
         <div class="discovery-grid">
@@ -308,9 +307,9 @@
             <label>
               Approved data path
               <select id="apiProviderInput">
-                <option value="approved-provider">Approved commercial provider or licensed API</option>
-                <option value="tiktok-research-api">TikTok Research API, only if eligible and approved</option>
-                <option value="manual-analyst-export">Manual analyst export from approved source</option>
+                <option value="approved-provider">Licensed API/provider</option>
+                <option value="tiktok-research-api">Research API, if eligible</option>
+                <option value="manual-analyst-export">Manual analyst export</option>
               </select>
             </label>
             <label>
@@ -322,14 +321,14 @@
               <textarea id="discoverySeedsInput" rows="5" spellcheck="false" placeholder="hashtags, keywords, scene terms, city names, sound IDs, usernames"></textarea>
             </label>
             <label>
-              Approved/manual result rows
+              Result rows
               <textarea id="discoveryRowsInput" rows="14" spellcheck="false" placeholder="Paste CSV rows or JSON array from an approved source. Required columns/fields: handle, displayName, caption, url. Optional: soundTitle, hashtags, region, observedDate, views, likes, comments, shares."></textarea>
             </label>
             <div class="button-row">
               <button type="submit">Cluster candidates</button>
               <button class="secondary-button" type="button" id="copyQueryPlanButton">Copy Query Plan</button>
             </div>
-            <p class="import-status" id="discoveryStatus">No live TikTok calls run here. Paste only approved/manual results.</p>
+            <p class="import-status" id="discoveryStatus">Source rows must come from an approved data path.</p>
           </form>
           <div class="discovery-results">
             <article class="detail-panel api-panel">
@@ -338,9 +337,9 @@
                 <h3>API adapter contract</h3>
               </div>
               <ul class="check-list compact-list">
-                <li>Credentials stay on a private server, never in GitHub Pages.</li>
-                <li>Adapter returns normalized rows into this workbench shape.</li>
-                <li>Human review stays required before dashboard import.</li>
+                <li>Credentials stay server-side.</li>
+                <li>Adapter returns normalized rows.</li>
+                <li>Human review is required before import.</li>
               </ul>
               <pre class="schema-box" id="apiPacketPreview"></pre>
             </article>
@@ -353,7 +352,7 @@
               <div class="candidate-list" id="candidateList"></div>
             </article>
             <article class="detail-panel">
-              <h3>ASI private packet preview</h3>
+              <h3>Review packet preview</h3>
               <pre class="schema-box tall-schema" id="discoveryPacketPreview"></pre>
             </article>
           </div>
@@ -363,15 +362,15 @@
       <section class="tab-panel" id="import" aria-labelledby="import-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Browser-only real analysis intake</p>
-            <h2 id="import-title">Private import</h2>
+            <p class="eyebrow">Local analysis intake</p>
+            <h2 id="import-title">Artist packet import</h2>
           </div>
-          <button class="quiet-button" type="button" id="resetFixturesButton">Reset fictional fixtures</button>
+          <button class="quiet-button" type="button" id="resetFixturesButton">Reset dataset</button>
         </div>
         <div class="import-grid">
           <form class="import-panel" id="importForm">
             <label>
-              Load private artist-analysis JSON
+              Load artist-analysis JSON
               <input id="importFile" type="file" accept="application/json,.json" />
             </label>
             <label>
@@ -382,15 +381,14 @@
               <button type="submit">Load into dashboard</button>
               <button class="secondary-button" type="button" id="sampleImportButton">Insert template</button>
             </div>
-            <p class="import-status" id="importStatus">No private packet loaded. Current dashboard uses fictional fixtures.</p>
+            <p class="import-status" id="importStatus">No packet loaded. Current dashboard uses the fixture dataset.</p>
           </form>
           <aside class="detail-panel">
             <h3>Import rules</h3>
             <ul class="check-list">
-              <li>Runs only in this browser session.</li>
-              <li>No upload, backend, API call, or sync is performed.</li>
-              <li>Use manually reviewed public evidence only.</li>
-              <li>Do not publish imported real-artist packets to GitHub Pages.</li>
+              <li>Runs in this browser session.</li>
+              <li>No upload, backend call, API call, or sync.</li>
+              <li>Use reviewed public evidence only.</li>
               <li>Keep source URLs, confidence, observed dates, and unknowns explicit.</li>
             </ul>
             <h3>Expected shape</h3>
@@ -401,18 +399,18 @@
 
       <section class="tab-panel" id="gates" aria-labelledby="gates-title">
         <div class="section-heading">
-          <p class="eyebrow">Approval infrastructure</p>
-          <h2 id="gates-title">Blocked actions</h2>
+          <p class="eyebrow">System controls</p>
+          <h2 id="gates-title">Control state</h2>
         </div>
         <div class="gate-grid" id="gateGrid"></div>
       </section>
     </main>
 
     <footer>
-      <span>ASI working title. Official brand pending.</span>
-      <span>Fictional fixtures only.</span>
+      <span>A&amp;R Prospect Desk</span>
+      <span>Session-only review surface</span>
     </footer>
 
-    <script src="./app.js?v=20260808-ar-desk"></script>
+    <script src="./app.js?v=20260808-live-cleanup"></script>
   </body>
 </html>

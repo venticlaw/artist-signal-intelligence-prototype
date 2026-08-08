@@ -851,7 +851,7 @@ body::before {
   content: "";
   background:
     linear-gradient(180deg, rgba(6, 8, 7, 0.08), rgba(6, 8, 7, 0.82)),
-    url("./assets/asi-signal-texture.png?v=20260808-ar-desk") center / cover no-repeat;
+    url("./assets/asi-signal-texture.png?v=20260808-live-cleanup") center / cover no-repeat;
   opacity: 0.86;
 }
 

@@ -3,7 +3,7 @@ const state = {
   defaultData: null,
   activeArtistId: null,
   buyerModeId: "distributor",
-  dataSourceLabel: "Fictional fixtures",
+  dataSourceLabel: "Fixture dataset",
   filters: {
     search: "",
     genre: "all",
@@ -303,7 +303,7 @@ function confidenceClass(confidence) {
 }
 
 function recordLabel() {
-  return state.data?.status === "private-browser-import" ? "Private browser import" : "Fictional fixture";
+  return state.data?.status === "private-browser-import" ? "Local import" : "Fixture record";
 }
 
 function renderModeControl() {
@@ -477,7 +477,7 @@ function renderActiveProspectPanel(visibleArtists) {
         <li>Confirm artist identity and catalog match.</li>
         <li>Review source URLs and confidence labels.</li>
         <li>Save pass/shortlist reason in A&R Notes.</li>
-        <li>No outreach from this prototype.</li>
+        <li>No outbound action from this screen.</li>
       </ul>
       <div class="button-row">
         <button class="secondary-button panel-action" type="button" data-jump-tab="brief">Open brief</button>
@@ -769,8 +769,8 @@ function renderReport() {
   const artist = getArtist();
   const mode = getMode();
   const report = [
-    `ASI SCOUTING REPORT PREVIEW`,
-    `Status: ${state.data.status === "private-browser-import" ? "Private browser import. Do not publish without separate approval." : "Fictional fixture for public-safe prototype"}`,
+    `A&R SCOUTING REPORT`,
+    `Status: ${state.data.status === "private-browser-import" ? "Local import" : "Fixture dataset"}`,
     ``,
     `Artist: ${artist.name}`,
     `Buyer lens: ${mode.label}`,
@@ -816,14 +816,14 @@ function renderReport() {
     `- Misleading signal risk: ${artist.feedbackLearning?.misleadingSignalRisk || "Not specified"}`,
     `- Suggested model adjustment: ${artist.feedbackLearning?.suggestedModelAdjustment || "No automatic change. Human approval required."}`,
     ``,
-    `Approval note: This preview is not a public artist ranking or a real artist claim.`
+    `Review note: Source labels, confidence, and unknowns must stay attached to every claim.`
   ].join("\n");
   $("#reportPreview").textContent = report;
 }
 
 function buildQuestionnairePacket() {
   return [
-    `# ASI Buyer Requirements Packet`,
+    `# Buyer Requirements Packet`,
     ``,
     `Status: Local draft only`,
     `Generated: ${new Date().toISOString()}`,
@@ -853,8 +853,8 @@ function buildQuestionnairePacket() {
     `- A&R decision note with pass/caution reason and human learning note.`,
     `- Markdown scouting report export for private review.`,
     ``,
-    `## Gated Until Separately Approved`,
-    `No outreach, scraping, paid datasets/APIs, backend storage, lead capture, public real-artist rankings, payment, DNS, Drive movement, outbound sends, or deletion.`
+    `## Control State`,
+    `No outbound actions, scraping, backend storage, lead capture, payment, DNS, Drive movement, or deletion from this dashboard.`
   ].join("\n");
 }
 
@@ -1016,7 +1016,7 @@ function buildApiConnectorPacket() {
     createdAt,
     provider: provider.label,
     connectorStatus,
-    frontendPolicy: "Static GitHub Pages must never store or call with API keys, OAuth tokens, cookies, or client secrets.",
+    frontendPolicy: "Browser code must never store or call with API keys, OAuth tokens, cookies, or client secrets.",
     serverSideOnly: true,
     objective,
     seedTerms: seeds,
@@ -1080,7 +1080,7 @@ function buildApiConnectorPacket() {
         }
       }
     },
-    reviewGate: "Every API result must land in candidate review before private dashboard import. No outreach, public ranking, lead capture, or publishing."
+    reviewGate: "Every API result must land in candidate review before dashboard import. Outbound actions, public ranking, and lead capture stay disabled."
   };
 }
 
@@ -1091,7 +1091,7 @@ function buildDiscoveryQueryPlan() {
   return [
     `# TikTok Discovery Query Plan`,
     ``,
-    `Status: No live calls from this prototype`,
+    `Status: Review intake`,
     `Data path: ${provider.label}`,
     `Objective: ${objective}`,
     ``,
@@ -1108,10 +1108,10 @@ function buildDiscoveryQueryPlan() {
     `- video_id`,
     ``,
     `## Server-Side API Rule`,
-    `The GitHub Pages app cannot hold credentials. A private backend adapter must call the approved API/vendor, normalize rows, and return only the fields this workbench accepts.`,
+    `Browser code cannot hold credentials. A server-side adapter must call the approved API/vendor, normalize rows, and return only the fields this desk accepts.`,
     ``,
     `## Review Rule`,
-    `Use only approved API/vendor/manual rows. Do not scrape, login-scrape, automate browser extraction, or publish real-artist rankings.`
+    `Use only approved API/vendor/manual rows. Do not scrape, login-scrape, automate browser extraction, or rank artists publicly.`
   ].join("\n");
 }
 
@@ -1139,7 +1139,7 @@ function buildDiscoveryPacket(candidates) {
       risks: [
         "TikTok row-level signal may not map to listener behavior",
         "Candidate identity needs human validation",
-        "No outreach or public ranking approved"
+        "Outbound action and public ranking disabled"
       ],
       developments: candidate.rows.map((row) => ({
         date: row.observedDate,
@@ -1205,7 +1205,7 @@ function renderDiscoveryWorkbench() {
       <article class="empty-state">
         <p class="eyebrow">No candidate clusters</p>
         <h3>Paste approved/manual rows</h3>
-        <p class="summary">The workbench clusters pasted rows by handle and converts them into a private ASI packet.</p>
+        <p class="summary">Paste source rows to cluster candidates and generate a review packet.</p>
       </article>
     `;
   $("#discoveryPacketPreview").textContent = state.discovery.packet
@@ -1232,7 +1232,7 @@ async function copyReport() {
     return;
   }
   await navigator.clipboard.writeText(report);
-  $("#exportStatus").textContent = "Copied Markdown report to clipboard. Private imports still require publication approval.";
+  $("#exportStatus").textContent = "Copied Markdown report to clipboard.";
 }
 
 function downloadReport() {
@@ -1248,7 +1248,7 @@ function downloadReport() {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
-  $("#exportStatus").textContent = `Downloaded ${filename}. Do not publish private artist packets without separate approval.`;
+  $("#exportStatus").textContent = `Downloaded ${filename}.`;
 }
 
 async function copyQuestionnaire() {
@@ -1479,7 +1479,7 @@ function normalizeImport(rawPacket) {
     throw new Error("Import needs createdAt as YYYY-MM-DD.");
   }
   if (rawPacket.publicationApproval !== "not-approved") {
-    throw new Error("publicationApproval must remain not-approved inside this prototype.");
+    throw new Error("publicationApproval must remain not-approved inside this desk.");
   }
   if (!hasText(rawPacket.dataPolicy)) throw new Error("Import needs a dataPolicy statement.");
 
@@ -1501,7 +1501,7 @@ function loadImportedPacket(packet, label) {
   state.data = normalized;
   state.activeArtistId = normalized.artists[0].id;
   state.dataSourceLabel = label;
-  $("#importStatus").textContent = `Loaded ${normalized.artists.length} private artist record(s) into this browser session only.`;
+  $("#importStatus").textContent = `Loaded ${normalized.artists.length} artist record(s) into this browser session.`;
   renderAll();
 }
 
@@ -1510,16 +1510,16 @@ function bindImportForm() {
 
   $("#sampleImportButton").addEventListener("click", () => {
     $("#importInput").value = JSON.stringify(importTemplate, null, 2);
-    $("#importStatus").textContent = "Template inserted. Replace placeholder values before private review.";
+    $("#importStatus").textContent = "Template inserted. Replace placeholder values before review.";
   });
 
   $("#resetFixturesButton").addEventListener("click", () => {
     state.data = structuredClone(state.defaultData);
     state.activeArtistId = state.data.artists[0].id;
-    state.dataSourceLabel = "Fictional fixtures";
+    state.dataSourceLabel = "Fixture dataset";
     $("#importInput").value = "";
     $("#importFile").value = "";
-    $("#importStatus").textContent = "Reset to fictional fixtures.";
+    $("#importStatus").textContent = "Reset to fixture dataset.";
     renderAll();
   });
 
@@ -1535,7 +1535,7 @@ function bindImportForm() {
     try {
       const text = $("#importInput").value.trim();
       if (!text) throw new Error("Paste JSON or choose a JSON file first.");
-      loadImportedPacket(JSON.parse(text), "Private browser import");
+      loadImportedPacket(JSON.parse(text), "Local import");
     } catch (error) {
       $("#importStatus").textContent = `Import failed: ${error.message}`;
     }
@@ -1598,7 +1598,7 @@ function bindDiscoveryForm() {
     $("#discoveryRowsInput").value = JSON.stringify(discoverySampleRows, null, 2);
     $("#discoverySeedsInput").value = "alt rnb\nunsigned artist\nnew music\nlocal scene\noriginal sound";
     $("#discoveryObjectiveInput").value = "Find emerging artist candidates from approved TikTok-style result rows";
-    $("#discoveryStatus").textContent = "Inserted fictional sample rows. Replace with approved/manual data before private analysis.";
+    $("#discoveryStatus").textContent = "Inserted sample rows. Replace with approved source data before review.";
     state.discovery.candidates = [];
     state.discovery.packet = null;
     state.discovery.apiPacket = buildApiConnectorPacket();
@@ -1613,7 +1613,7 @@ function bindDiscoveryForm() {
         return;
       }
       await navigator.clipboard.writeText(plan);
-      $("#discoveryStatus").textContent = "Copied query plan. No live TikTok call was made.";
+      $("#discoveryStatus").textContent = "Copied query plan.";
     } catch (error) {
       $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
     }
@@ -1627,7 +1627,7 @@ function bindDiscoveryForm() {
         return;
       }
       await navigator.clipboard.writeText(JSON.stringify(state.discovery.packet, null, 2));
-      $("#discoveryStatus").textContent = "Copied ASI private import packet. Keep real candidates private.";
+      $("#discoveryStatus").textContent = "Copied review packet.";
     } catch (error) {
       $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
     }
@@ -1641,7 +1641,7 @@ function bindDiscoveryForm() {
         return;
       }
       await navigator.clipboard.writeText(JSON.stringify(packet, null, 2));
-      $("#discoveryStatus").textContent = "Copied API connector packet. Credentials still belong on a private server only.";
+      $("#discoveryStatus").textContent = "Copied API connector packet.";
     } catch (error) {
       $("#discoveryStatus").textContent = `Copy failed: ${error.message}`;
     }
@@ -1655,7 +1655,7 @@ function bindDiscoveryForm() {
       const candidates = clusterDiscoveryRows(rows);
       state.discovery.candidates = candidates;
       state.discovery.packet = buildDiscoveryPacket(candidates);
-      $("#discoveryStatus").textContent = `Clustered ${rows.length} row(s) into ${candidates.length} candidate(s). No live TikTok call was made.`;
+      $("#discoveryStatus").textContent = `Clustered ${rows.length} row(s) into ${candidates.length} candidate(s).`;
       renderDiscoveryWorkbench();
     } catch (error) {
       $("#discoveryStatus").textContent = `Discovery failed: ${error.message}`;
