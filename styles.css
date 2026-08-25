@@ -1,16 +1,23 @@
 :root {
-  color-scheme: light;
-  --ink: #101419;
-  --muted: #68727e;
-  --soft: #f2f4f1;
-  --paper: #faf9f5;
-  --panel: #ffffff;
-  --line: #dfe4e2;
-  --line-strong: #c5cecb;
-  --green: #0d6f5e;
-  --green-dark: #083f36;
-  --blue: #2d5f9a;
-  --shadow: 0 18px 60px rgba(16, 20, 25, 0.08);
+  color-scheme: dark;
+  --ink: #f6f7f4;
+  --muted: #b7c0bd;
+  --subtle: #7c8988;
+  --bg: #080a0c;
+  --soft: rgba(246, 247, 244, 0.07);
+  --paper: #080a0c;
+  --panel: rgba(246, 247, 244, 0.09);
+  --panel-strong: rgba(246, 247, 244, 0.14);
+  --line: rgba(246, 247, 244, 0.16);
+  --line-strong: rgba(246, 247, 244, 0.30);
+  --aqua: #5bffde;
+  --mint: #a9ffd8;
+  --amber: #ffcb70;
+  --coral: #ff776b;
+  --green: #5bffde;
+  --green-dark: #5bffde;
+  --blue: #a48cff;
+  --shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
 }
 
 * {
@@ -21,8 +28,29 @@ body {
   min-width: 320px;
   margin: 0;
   color: var(--ink);
-  background: var(--paper);
+  overflow-x: hidden;
+  background:
+    linear-gradient(rgba(8, 10, 12, 0.70), rgba(8, 10, 12, 0.94)),
+    url("./assets/asi-signal-texture.png"),
+    radial-gradient(circle at 16% 12%, rgba(91, 255, 222, 0.18), transparent 30%),
+    radial-gradient(circle at 86% 8%, rgba(255, 203, 112, 0.12), transparent 26%),
+    var(--bg);
+  background-attachment: fixed;
+  background-size: auto, 520px auto, auto, auto, auto;
   font: 15px/1.5 Inter, "Avenir Next", "Segoe UI", Arial, sans-serif;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(246, 247, 244, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(246, 247, 244, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 78%);
 }
 
 button,
@@ -63,7 +91,8 @@ p {
   height: 100vh;
   padding: 22px;
   border-right: 1px solid var(--line);
-  background: #f6f7f2;
+  background: rgba(8, 10, 12, 0.78);
+  backdrop-filter: blur(18px);
 }
 
 .brand-lockup {
@@ -78,8 +107,9 @@ p {
   height: 44px;
   place-items: center;
   border-radius: 8px;
-  color: #fff;
-  background: var(--green-dark);
+  border: 1px solid rgba(91, 255, 222, 0.38);
+  color: var(--bg);
+  background: var(--aqua);
   font-size: 0.82rem;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -115,7 +145,7 @@ p {
 .nav-item.is-active {
   color: var(--ink);
   border-color: var(--line);
-  background: #fff;
+  background: var(--panel-strong);
 }
 
 .nav-item.is-active {
@@ -127,7 +157,7 @@ p {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--panel);
 }
 
 .sidebar-card span,
@@ -135,7 +165,7 @@ p {
 .panel-kicker,
 .priority-strip span {
   display: block;
-  color: var(--green-dark);
+  color: var(--aqua);
   font-size: 0.74rem;
   font-weight: 950;
   letter-spacing: 0.11em;
@@ -208,9 +238,9 @@ h3 {
 
 .primary-button {
   padding: 0 16px;
-  border: 1px solid var(--green-dark);
-  color: #fff;
-  background: var(--green-dark);
+  border: 1px solid var(--aqua);
+  color: #06100e;
+  background: var(--aqua);
 }
 
 .secondary-button,
@@ -218,7 +248,7 @@ h3 {
   padding: 0 14px;
   border: 1px solid var(--line);
   color: var(--ink);
-  background: #fff;
+  background: var(--panel);
 }
 
 .priority-strip {
@@ -273,8 +303,8 @@ h3 {
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--green-dark);
-  background: #f7faf7;
+  color: var(--aqua);
+  background: rgba(91, 255, 222, 0.08);
   font-size: 0.78rem;
   font-weight: 900;
   white-space: nowrap;
@@ -297,8 +327,8 @@ h3 {
   flex-direction: column;
   justify-content: space-between;
   background:
-    linear-gradient(135deg, rgba(13, 111, 94, 0.11), transparent 55%),
-    #fff;
+    linear-gradient(135deg, rgba(91, 255, 222, 0.13), transparent 55%),
+    var(--panel);
 }
 
 .hero-panel h3 {
@@ -363,6 +393,7 @@ h3 {
   border-radius: 8px;
   background: var(--soft);
   text-align: left;
+  color: var(--ink);
 }
 
 .queue-item strong,
@@ -398,7 +429,7 @@ textarea {
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   color: var(--ink);
-  background: #fff;
+  background: rgba(8, 10, 12, 0.72);
 }
 
 input,
@@ -482,7 +513,7 @@ label {
   width: var(--bar-width);
   height: 9px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--green), var(--blue));
+  background: linear-gradient(90deg, var(--aqua), var(--amber));
 }
 
 .investment-item {
@@ -539,8 +570,8 @@ label {
   height: 48px;
   place-items: center;
   border-radius: 8px;
-  color: #fff;
-  background: var(--green-dark);
+  color: #06100e;
+  background: var(--aqua);
 }
 
 .intel-card ul {
@@ -567,7 +598,7 @@ label {
 }
 
 .note-item span {
-  color: var(--green-dark);
+  color: var(--aqua);
   font-weight: 900;
 }
 
@@ -614,10 +645,12 @@ label {
 @media (max-width: 760px) {
   body {
     font-size: 14px;
+    background-attachment: scroll;
+    background-size: auto, 360px auto, auto, auto, auto;
   }
 
   .workspace {
-    width: min(100% - 24px, 1260px);
+    width: min(100% - 22px, 1260px);
     padding: 18px 0 34px;
   }
 
@@ -625,6 +658,10 @@ label {
   .section-heading {
     display: grid;
     gap: 12px;
+  }
+
+  .workspace-header {
+    margin-bottom: 16px;
   }
 
   h1 {
@@ -710,6 +747,7 @@ label {
   .artist-table tr {
     padding: 14px;
     border-bottom: 1px solid var(--line);
+    background: rgba(246, 247, 244, 0.04);
   }
 
   .artist-table tr:last-child {
@@ -718,8 +756,8 @@ label {
 
   .artist-table td {
     display: grid;
-    grid-template-columns: minmax(92px, 34%) 1fr;
-    gap: 12px;
+    grid-template-columns: minmax(84px, 30%) minmax(0, 1fr);
+    gap: 10px;
     padding: 9px 0;
     border-bottom: 0;
   }
@@ -761,11 +799,16 @@ label {
     display: grid;
     gap: 4px;
   }
+
+  .status-pill,
+  .status-tag {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 420px) {
   .workspace {
-    width: min(100% - 18px, 1260px);
+    width: min(100% - 16px, 1260px);
   }
 
   .priority-strip {
@@ -777,7 +820,12 @@ label {
   }
 
   .nav-item {
-    min-width: 104px;
+    min-width: 96px;
     padding: 0 10px;
+  }
+
+  .artist-table td {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }

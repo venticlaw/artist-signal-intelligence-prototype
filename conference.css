@@ -28,6 +28,7 @@ body {
   min-width: 320px;
   margin: 0;
   color: var(--ink);
+  overflow-x: hidden;
   background:
     linear-gradient(rgba(8, 10, 12, 0.66), rgba(8, 10, 12, 0.92)),
     url("./assets/asi-signal-texture.png"),
@@ -825,6 +826,27 @@ h3 {
 
   .insight-stack article {
     min-height: 94px;
+  }
+
+  .signal-visual {
+    gap: 10px;
+  }
+
+  .radar-card {
+    min-height: 238px;
+  }
+
+  .radar-topline {
+    display: grid;
+    gap: 4px;
+  }
+
+  .signal-map {
+    inset: 58px 12px 64px;
+  }
+
+  .mini-bars {
+    height: 46px;
   }
 
   .demo-checklist > div {
