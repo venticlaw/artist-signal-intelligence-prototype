@@ -24,10 +24,20 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+
 body {
   min-width: 320px;
   margin: 0;
   color: var(--ink);
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
   background:
     linear-gradient(rgba(8, 10, 12, 0.70), rgba(8, 10, 12, 0.94)),
@@ -79,7 +89,10 @@ p {
 .app-frame {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  overflow-x: clip;
 }
 
 .sidebar {
@@ -185,6 +198,7 @@ p {
 
 .workspace {
   width: min(1260px, calc(100% - 36px));
+  max-width: 100%;
   margin: 0 auto;
   padding: 28px 0 48px;
 }
@@ -203,6 +217,7 @@ h1 {
   font-size: clamp(2.2rem, 5vw, 4.5rem);
   line-height: 0.96;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 h2 {
@@ -210,6 +225,7 @@ h2 {
   font-size: clamp(1.45rem, 2.6vw, 2.45rem);
   line-height: 1.05;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 h3 {
@@ -222,6 +238,7 @@ h3 {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .primary-button,
@@ -277,6 +294,7 @@ h3 {
   margin-top: 8px;
   font-size: clamp(1.6rem, 3vw, 2.25rem);
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .view-panel {
@@ -643,15 +661,53 @@ label {
 }
 
 @media (max-width: 760px) {
+  html {
+    background: var(--bg);
+  }
+
   body {
     font-size: 14px;
     background-attachment: scroll;
     background-size: auto, 360px auto, auto, auto, auto;
   }
 
+  body::before {
+    background-size: 42px 42px;
+  }
+
+  .app-frame {
+    display: block;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 12px;
+    background:
+      linear-gradient(rgba(8, 10, 12, 0.76), rgba(8, 10, 12, 0.91)),
+      url("./assets/asi-signal-texture.png"),
+      var(--bg);
+    background-size: auto, 320px auto, auto;
+  }
+
+  .brand-lockup {
+    min-width: 0;
+  }
+
   .workspace {
-    width: min(100% - 22px, 1260px);
-    padding: 18px 0 34px;
+    width: 100%;
+    padding: 18px 12px 34px;
+    overflow-x: hidden;
+  }
+
+  .workspace > * {
+    max-width: 100%;
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
+    line-height: 1.25;
   }
 
   .workspace-header,
@@ -665,12 +721,12 @@ label {
   }
 
   h1 {
-    font-size: clamp(2rem, 12vw, 3rem);
-    line-height: 1;
+    font-size: clamp(2.05rem, 10vw, 2.65rem);
+    line-height: 1.04;
   }
 
   h2 {
-    font-size: clamp(1.45rem, 8vw, 2rem);
+    font-size: clamp(1.35rem, 7vw, 1.85rem);
   }
 
   .header-actions {
@@ -691,17 +747,17 @@ label {
   }
 
   .priority-strip {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
   .priority-strip article {
-    min-height: 96px;
+    min-height: auto;
     padding: 14px;
   }
 
   .priority-strip strong {
-    font-size: clamp(1.35rem, 9vw, 1.8rem);
+    font-size: clamp(1.55rem, 8vw, 2rem);
   }
 
   .panel {
@@ -718,7 +774,19 @@ label {
   }
 
   .side-nav {
-    margin-inline: -4px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-inline: 0;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .nav-item {
+    min-width: 0;
+    width: 100%;
+    padding: 0 8px;
+    white-space: normal;
   }
 
   .sidebar-card {
@@ -808,11 +876,7 @@ label {
 
 @media (max-width: 420px) {
   .workspace {
-    width: min(100% - 16px, 1260px);
-  }
-
-  .priority-strip {
-    grid-template-columns: 1fr;
+    padding-inline: 10px;
   }
 
   .brand-lockup small {
@@ -820,8 +884,9 @@ label {
   }
 
   .nav-item {
-    min-width: 96px;
+    min-width: 0;
     padding: 0 10px;
+    font-size: 0.88rem;
   }
 
   .artist-table td {
