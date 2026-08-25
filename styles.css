@@ -583,11 +583,24 @@ label {
   .sidebar {
     position: static;
     height: auto;
+    gap: 16px;
+    padding: 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
 
   .side-nav {
-    grid-template-columns: repeat(5, minmax(110px, 1fr));
+    display: flex;
     overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .nav-item {
+    flex: 0 0 auto;
+    min-width: 116px;
+    text-align: center;
   }
 
   .overview-grid,
@@ -599,17 +612,42 @@ label {
 }
 
 @media (max-width: 760px) {
+  body {
+    font-size: 14px;
+  }
+
   .workspace {
-    width: min(100% - 28px, 1260px);
-    padding-top: 20px;
+    width: min(100% - 24px, 1260px);
+    padding: 18px 0 34px;
   }
 
   .workspace-header,
   .section-heading {
     display: grid;
+    gap: 12px;
   }
 
-  .header-actions,
+  h1 {
+    font-size: clamp(2rem, 12vw, 3rem);
+    line-height: 1;
+  }
+
+  h2 {
+    font-size: clamp(1.45rem, 8vw, 2rem);
+  }
+
+  .header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .text-link {
+    width: 100%;
+  }
+
   .filter-row {
     grid-template-columns: 1fr;
     width: 100%;
@@ -617,6 +655,24 @@ label {
 
   .priority-strip {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .priority-strip article {
+    min-height: 96px;
+    padding: 14px;
+  }
+
+  .priority-strip strong {
+    font-size: clamp(1.35rem, 9vw, 1.8rem);
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .hero-panel {
+    min-height: auto;
   }
 
   .focus-stats,
@@ -625,6 +681,103 @@ label {
   }
 
   .side-nav {
-    grid-template-columns: repeat(5, 132px);
+    margin-inline: -4px;
+  }
+
+  .sidebar-card {
+    display: none;
+  }
+
+  .artist-table,
+  .artist-table thead,
+  .artist-table tbody,
+  .artist-table tr,
+  .artist-table th,
+  .artist-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .artist-table {
+    min-width: 0;
+  }
+
+  .artist-table thead {
+    display: none;
+  }
+
+  .artist-table tr {
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .artist-table tr:last-child {
+    border-bottom: 0;
+  }
+
+  .artist-table td {
+    display: grid;
+    grid-template-columns: minmax(92px, 34%) 1fr;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 0;
+  }
+
+  .artist-table td::before {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .artist-table td:nth-child(1)::before {
+    content: "Artist";
+  }
+
+  .artist-table td:nth-child(2)::before {
+    content: "Status";
+  }
+
+  .artist-table td:nth-child(3)::before {
+    content: "Lane";
+  }
+
+  .artist-table td:nth-child(4)::before {
+    content: "Owner";
+  }
+
+  .artist-table td:nth-child(5)::before {
+    content: "Spend";
+  }
+
+  .artist-table td:nth-child(6)::before {
+    content: "Next";
+  }
+
+  .money-row,
+  .bar-row div {
+    display: grid;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 420px) {
+  .workspace {
+    width: min(100% - 18px, 1260px);
+  }
+
+  .priority-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-lockup small {
+    display: none;
+  }
+
+  .nav-item {
+    min-width: 104px;
+    padding: 0 10px;
   }
 }
